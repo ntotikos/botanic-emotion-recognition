@@ -1,0 +1,9 @@
+# Project Data
+
+# Models
+
+# Environments
+venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints
