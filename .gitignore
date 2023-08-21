@@ -1,5 +1,5 @@
 # Project Data
-sensitive-paths.json
+data/teamwork-emotions
 
 
 # Models
@@ -8,7 +8,7 @@ sensitive-paths.json
 venv/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+**/.ipynb_checkpoints/
 
 
 
