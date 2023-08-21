@@ -1,5 +1,8 @@
 # Project Data
 data/teamwork-emotions
+data/raw-plant-data
+data/interim-plant-data-teamwork-extracted
+
 src/utils/constants.py
 
 
