@@ -17,6 +17,8 @@ venv/
 # Documentation 
 .idea
 
+# Logs
+logs/
 
 
 # GitHub template:
