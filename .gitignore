@@ -5,6 +5,7 @@ data/raw-plant-data
 data/interim-plant-data-teamwork-extracted
 data/teamwork-intervals
 
+notebooks/playground.ipynb
 
 
 
