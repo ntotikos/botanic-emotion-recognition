@@ -5,7 +5,7 @@ data/raw-plant-data
 data/interim-plant-data-teamwork-extracted
 data/teamwork-intervals
 
-src/utils/constants.py
+
 
 
 # Models
