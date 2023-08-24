@@ -1,8 +1,25 @@
 """Label extractor for plant data. Labels are derived from facial emotions in provided .csv file."""
+import os
+
 import pandas as pd
 import numpy as np
 from typing import Union, List, Literal
 from src.utils.constants import EKMAN_EMOTIONS_NEUTRAL, EMOTIONS_DIR
+
+
+def read_emotions_csv(filepath: str) -> pd.DataFrame:
+    """
+    This method reads a .csv file containing individual emotions based on the specified path.
+
+    :param filepath: Path to team member emotions .csv file.
+    """
+
+    if os.path.splitext(filepath)[1] == ".csv":
+        df_emotions = pd.read_csv(filepath)
+        return df_emotions
+
+    else:
+        raise NameError(f"File should be a \".csv\" file. Got \"{os.path.splitext(filepath)[1]}\".")
 
 
 def get_dominant_emotion(
@@ -58,9 +75,11 @@ if __name__ == "__main__":
     df_rows = pd.read_csv(csv_file_path)[0:3]
 
     # TEST the different scenarios.
-    get_dominant_emotion(df_rows,emotion_as="one-hot")
-    get_dominant_emotion(df_rows,emotion_as="label")
-    a = get_dominant_emotion(df_rows,emotion_as="binary-fusion")
+    get_dominant_emotion(df_rows, emotion_as="one-hot")
+    get_dominant_emotion(df_rows, emotion_as="label")
+    a = get_dominant_emotion(df_rows, emotion_as="binary-fusion")
 
-    get_dominant_emotion(df_rows,emotion_as="-hot")
+    #get_dominant_emotion(df_rows, emotion_as="-hot")
+
+    print(read_emotions_csv(csv_file_path)[0:10])
 

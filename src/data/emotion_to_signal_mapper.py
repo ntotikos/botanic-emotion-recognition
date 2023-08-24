@@ -40,7 +40,7 @@ def get_duration_from_label(label: str, mode: Literal["interim", "emotions"] = "
         return duration
 
 
-def map_emotions_to_signal(interim_data_dir: str, emotions_dir: str) -> pd.DataFrame:
+def get_emotions_to_signal_matches(interim_data_dir: str, emotions_dir: str) -> pd.DataFrame:
     emotion_signal_mappings = pd.DataFrame(columns=['path_emotions', 'duration_emotions', "path_interim",
                                                     "duration_interim", 'difference'])
     """
@@ -77,7 +77,7 @@ def map_emotions_to_signal(interim_data_dir: str, emotions_dir: str) -> pd.DataF
 
 if __name__ == "__main__":
     # Quick sanity check
-    mismatches = map_emotions_to_signal(INTERIM_PLANT_DATA_DIR, EMOTIONS_DIR)
+    mismatches = get_emotions_to_signal_matches(INTERIM_PLANT_DATA_DIR, EMOTIONS_DIR)
     df_bool = (mismatches["difference"] != 0)
     if df_bool.sum() == 12:
         print(f"The number of mismatches {df_bool.sum()} correct.")
