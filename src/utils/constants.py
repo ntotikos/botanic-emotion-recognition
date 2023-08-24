@@ -19,3 +19,9 @@ TEAM_NAMES = ["team_01", "team_02", "team_03", "team_04", "team_05", "team_06", 
               "team_20", "team_22"]
 
 TEAMWORK_SESSION_DAYS = ["2023-01-10", "2023-01-12", "2023-01-13"]
+
+
+# Assumptions
+EKMAN_EMOTIONS = ["Angry", "Disgust", "Happy", "Sad", "Surprise", "Fear"]
+EKMAN_EMOTIONS_NEUTRAL = EKMAN_EMOTIONS + ["Neutral"]
+
