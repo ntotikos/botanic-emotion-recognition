@@ -46,7 +46,7 @@ def get_dominant_emotion(
 
 
 # TODO: implement functionality to cover the case "fusion of 7 binary classifiers"
-def todo_placeholder_for_binary_fusion_classification_labels():
+def placeholder_for_get_binary_fusion_classification_labels():
     """
     After the majority vote on the collective emotion, get a representation of this derived label depending on
     the chosen type of classification: "7-class" or "binary-fusion".
