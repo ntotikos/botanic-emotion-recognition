@@ -44,6 +44,7 @@ def get_dominant_emotion(
         dominant_emotion = df_summed_rows.idxmax(axis=1).iloc[0]
         print(f"Frame {frame_id}: Dominant emotion is {dominant_emotion}.")
         return dominant_emotion
+    # TODO: "one-hot" and "binary-fusion" are probably not needed HERE. Delete.
     elif emotion_as == "one-hot":
         # for logging purposes get emotion as label.
         dominant_emotion = df_summed_rows.idxmax(axis=1).iloc[0]
@@ -75,9 +76,7 @@ if __name__ == "__main__":
     df_rows = pd.read_csv(csv_file_path)[0:3]
 
     # TEST the different scenarios.
-    get_dominant_emotion(df_rows, emotion_as="one-hot")
     get_dominant_emotion(df_rows, emotion_as="label")
-    a = get_dominant_emotion(df_rows, emotion_as="binary-fusion")
 
     #get_dominant_emotion(df_rows, emotion_as="-hot")
 
