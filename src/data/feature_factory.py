@@ -3,6 +3,13 @@ This module is a feature extraction factory for the purpose to cover different f
 methods. For this project, spectral, temporal, and statistical features are of interest.
 """
 
+"""
+1. For MFCC features: Read one entire teamwork session plant file, i.e. not the 1s slices, because of sliding window. 
+2. For other features: 1s slices are needed as we compute manual features for these slices. LOAD 1s slices from disk. 
+"""
+
+from src.data.plant_data_reader import read_plant_file
+
 
 class FeatureExtractor:
     pass
