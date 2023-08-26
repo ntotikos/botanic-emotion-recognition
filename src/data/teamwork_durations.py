@@ -9,7 +9,7 @@ import os
 
 from src.utils.constants import EMOTIONS_DIR, INTERIM_PLANT_DATA_DIR, TEAM_NAMES, TEAMWORK_SESSION_DAYS, LOGS_DIR
 
-from src.data.emotion_reader import get_dominant_emotion
+# from src.data.emotion_reader import get_dominant_emotion
 # from src.data.plant_data_reader import
 
 
@@ -93,10 +93,12 @@ def compare_all_indicated_tw_durations(
     return emotion_signal_mappings
 
 
-def compare_indicated_tw_duration() -> bool:
+def compare_indicated_tw_duration(interim_data_file, clip_file) -> bool:
     equal_durations = True
 
-
+    if get_duration_from_label(interim_data_file)-get_duration_from_label(clip_file, mode="emotions") != 0:
+        equal_durations = False
+        print("Durations do not match!")
 
     return equal_durations
 
@@ -115,5 +117,6 @@ if __name__ == "__main__":
         if df_bool.sum() == 12:
             print(f"The number of mismatches {df_bool.sum()} correct.")
 
-
     get_all_duration_mismatches()
+
+
