@@ -4,7 +4,10 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Union, List, Literal
-from src.utils.constants import EKMAN_EMOTIONS_NEUTRAL, EMOTIONS_DIR
+
+from src.data.teamwork_durations import custom_sort, compare_indicated_tw_duration
+from src.utils.constants import (EKMAN_EMOTIONS_NEUTRAL, EMOTIONS_DIR, TEAM_NAMES, TEAMWORK_SESSION_DAYS,
+                                 INTERIM_PLANT_DATA_DIR)
 
 
 def read_emotions_csv(filepath: str) -> pd.DataFrame:
@@ -71,6 +74,22 @@ def placeholder_for_get_binary_fusion_classification_labels():
     """
 
 
+def extract_labels(clip_file, save: bool = False):
+    """
+    Extract emotion labels from .csv file for one teamwork session of a team on a particular day.
+    """
+    labels = []
+    df_snapshots = read_emotions_csv(clip_file).groupby("Frame")  # create list snapshots
+
+    for frame, snapshot in df_snapshots:
+        # TODO: delete if statement!
+        if frame < 1000:
+            label = get_dominant_emotion(snapshot, emotion_as="label")
+            labels.append({frame: label})
+
+    return labels
+
+
 if __name__ == "__main__":
     csv_file_path = EMOTIONS_DIR / "team_01/2023-01-10/clip_0_8583_9740.csv"
     df_rows = pd.read_csv(csv_file_path)[0:3]
@@ -78,7 +97,39 @@ if __name__ == "__main__":
     # TEST the different scenarios.
     get_dominant_emotion(df_rows, emotion_as="label")
 
-    #get_dominant_emotion(df_rows, emotion_as="-hot")
+    # get_dominant_emotion(df_rows, emotion_as="-hot")
 
     print(read_emotions_csv(csv_file_path)[0:10])
+
+    save_file = False
+    # iterate over all files and extract emotions.
+    for t in TEAM_NAMES:
+        for d in TEAMWORK_SESSION_DAYS:
+            interim_data_path = os.path.join(INTERIM_PLANT_DATA_DIR, t, d)
+            emotions_path = os.path.join(EMOTIONS_DIR, t, d)
+
+            if os.path.exists(interim_data_path) and os.path.exists(emotions_path):
+                # 1. Files with emotions per second
+                clip_files = os.listdir(emotions_path)
+                clip_files = [item for item in clip_files if not item.startswith('team')]  # remove item "team_1...csv"
+
+                # lambda function needed because otherwise I could not use self-implemented custom_sort
+                # because it takes more than one argument.
+                clip_files = sorted(clip_files, key=lambda x: custom_sort(x, mode="emotions"))
+
+                # 2. Files with interim plant teamwork signal data
+                interim_data_files = os.listdir(interim_data_path)
+                interim_data_files = sorted(interim_data_files, key=custom_sort)
+
+                for i in range(len(clip_files)):
+                    equal_durations = compare_indicated_tw_duration(interim_data_files[i], clip_files[i])
+
+                    if equal_durations:
+                        csv_path = os.path.join(emotions_path, clip_files[i])
+                        emotions = extract_labels(csv_path, save_file)
+                        print(emotions)
+
+                    break
+            break
+        break
 
