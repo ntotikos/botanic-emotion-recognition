@@ -45,7 +45,7 @@ class FeatureFactory:
         elif feature_type == "temporal":
             return TemporalFeatures()
         elif feature_type == "statistical":
-            return StatisticalFeatures
+            return StatisticalFeatures()
         else:
             raise ValueError(f"Unknown feature type: {feature_type}")
 
