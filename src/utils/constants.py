@@ -8,6 +8,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent  # repository root: botanic-emotion-recognition/
 
 EMOTIONS_DIR = PROJECT_ROOT / "data/teamwork-emotions"
+LABELS_DIR = PROJECT_ROOT / "data/labels-extracted"
 INTERIM_PLANT_DATA_DIR = PROJECT_ROOT / "data/interim-plant-data-teamwork-extracted"
 
 LOGS_DIR = PROJECT_ROOT / "logs"

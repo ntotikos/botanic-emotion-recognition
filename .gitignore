@@ -4,6 +4,7 @@ data/teamwork-emotions
 data/raw-plant-data
 data/interim-plant-data-teamwork-extracted
 data/teamwork-intervals
+data/labels-extracted
 
 notebooks/playground.ipynb
 

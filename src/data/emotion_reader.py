@@ -7,7 +7,7 @@ from typing import Union, List, Literal
 
 from src.data.teamwork_durations import custom_sort, compare_indicated_tw_duration
 from src.utils.constants import (EKMAN_EMOTIONS_NEUTRAL, EMOTIONS_DIR, TEAM_NAMES, TEAMWORK_SESSION_DAYS,
-                                 INTERIM_PLANT_DATA_DIR)
+                                 INTERIM_PLANT_DATA_DIR, LABELS_DIR)
 
 
 def read_emotions_csv(filepath: str) -> pd.DataFrame:
@@ -18,8 +18,8 @@ def read_emotions_csv(filepath: str) -> pd.DataFrame:
     """
 
     if os.path.splitext(filepath)[1] == ".csv":
-        df_emotions = pd.read_csv(filepath)
-        return df_emotions
+        df = pd.read_csv(filepath)
+        return df
 
     else:
         raise NameError(f"File should be a \".csv\" file. Got \"{os.path.splitext(filepath)[1]}\".")
@@ -45,7 +45,7 @@ def get_dominant_emotion(
 
     if emotion_as == "label":
         dominant_emotion = df_summed_rows.idxmax(axis=1).iloc[0]
-        print(f"Frame {frame_id}: Dominant emotion is {dominant_emotion}.")
+        # print(f"Frame {frame_id}: Dominant emotion is {dominant_emotion}.")
         return dominant_emotion
     # TODO: "one-hot" and "binary-fusion" are probably not needed HERE. Delete.
     elif emotion_as == "one-hot":
@@ -74,20 +74,22 @@ def placeholder_for_get_binary_fusion_classification_labels():
     """
 
 
-def extract_labels(clip_file, save: bool = False):
+def extract_labels(clip_file):
     """
     Extract emotion labels from .csv file for one teamwork session of a team on a particular day.
     """
+    frames = []
     labels = []
     df_snapshots = read_emotions_csv(clip_file).groupby("Frame")  # create list snapshots
 
     for frame, snapshot in df_snapshots:
-        # TODO: delete if statement!
-        if frame < 1000:
-            label = get_dominant_emotion(snapshot, emotion_as="label")
-            labels.append({frame: label})
+        label = get_dominant_emotion(snapshot, emotion_as="label")
+        frames.append(frame)
+        labels.append(label)
 
-    return labels
+    df_labels = pd.DataFrame({"Frame": frames, "Labels": labels})
+
+    return df_labels
 
 
 if __name__ == "__main__":
@@ -101,7 +103,7 @@ if __name__ == "__main__":
 
     print(read_emotions_csv(csv_file_path)[0:10])
 
-    save_file = False
+    save_file = True
     # iterate over all files and extract emotions.
     for t in TEAM_NAMES:
         for d in TEAMWORK_SESSION_DAYS:
@@ -126,10 +128,18 @@ if __name__ == "__main__":
 
                     if equal_durations:
                         csv_path = os.path.join(emotions_path, clip_files[i])
-                        emotions = extract_labels(csv_path, save_file)
-                        print(emotions)
+                        df_emotions = extract_labels(csv_path)
 
-                    break
-            break
-        break
+                        if save_file:
+                            label_path = os.path.join(LABELS_DIR, t, d)
 
+                            if not os.path.exists(label_path):
+                                os.makedirs(label_path)
+
+                            fragment = interim_data_files[i].split(".")[0]
+                            file_path = os.path.join(label_path, f"emotions_{fragment}.csv")
+
+                            if not os.path.exists(file_path):
+                                df_emotions.to_csv(file_path, index=False)
+
+                print("1 Day done!")
