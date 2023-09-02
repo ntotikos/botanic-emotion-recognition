@@ -1,9 +1,8 @@
 """ Build custom datasets. """
-from abc import ABC, abstractmethod
 import pickle
 
 from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT
-from torch.utils.data import Dataset, DataLoader, random_split, TensorDataset
+from torch.utils.data import DataLoader, random_split, TensorDataset
 import torch
 import numpy as np
 
@@ -32,13 +31,11 @@ class EkmanDataset:
         wav_slices = []
         labels = []
         for segment in self.raw_data:
-            print(segment)
             wav_slices.append(segment["wav_slice"])
             labels.append(self.map_label_to_int(segment["label"]))
 
-        wav_slices = torch.tensor(np.array(wav_slices))  # Converting list into tensor faster as numpy array.
-        labels = torch.tensor(np.array(labels))
-        print("Labels:", labels)
+        wav_slices = torch.tensor(np.array(wav_slices), dtype=torch.float32)
+        labels = torch.tensor(np.array(labels), dtype=torch.long)
         self.dataset = TensorDataset(wav_slices, labels)
 
     def get_labels(self):
@@ -69,7 +66,7 @@ class EkmanDataset:
 
     def create_data_loader(self, batch_size=32):
         # TODO: How to handle case when there are only 29/32 samples left? Padding or doesn't matter?
-        train_loader= DataLoader(self.train_data, batch_size)
+        train_loader = DataLoader(self.train_data, batch_size)
         val_loader = DataLoader(self.val_data, batch_size)
         test_loader = DataLoader(self.test_data, batch_size)
 
@@ -84,5 +81,5 @@ if __name__ == "__main__":
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
 
-
-
+    for i, j in train_dataloader:
+        print(i)
