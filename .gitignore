@@ -6,6 +6,7 @@ data/interim-plant-data-teamwork-extracted
 data/teamwork-intervals
 data/labels-extracted
 data/cleaned-plant-data
+data/datasets
 
 notebooks/playground.ipynb
 

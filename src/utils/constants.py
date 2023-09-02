@@ -11,6 +11,7 @@ EMOTIONS_DIR = PROJECT_ROOT / "data/teamwork-emotions"
 LABELS_DIR = PROJECT_ROOT / "data/labels-extracted"
 INTERIM_PLANT_DATA_DIR = PROJECT_ROOT / "data/interim-plant-data-teamwork-extracted"
 CLEANED_DATA_DIR = PROJECT_ROOT / "data/cleaned-plant-data"
+DATASETS_DIR = PROJECT_ROOT / "data/datasets"  # TODO: update once target datasets are defined.
 
 LOGS_DIR = PROJECT_ROOT / "logs"
 
