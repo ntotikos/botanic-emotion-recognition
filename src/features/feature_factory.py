@@ -9,7 +9,7 @@ methods. For this project, spectral, temporal, and statistical features are of i
 
 Wavelet
 """
-from src.data.plant_data_reader import read_plant_file
+from src.data.data_segmentation import read_plant_file
 
 
 class FeatureExtractor:

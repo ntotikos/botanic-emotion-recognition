@@ -1,5 +1,6 @@
-"""Data reader for plant data stored as .wav files."""
+"""Slice .wav plant data into 1s chuncks and assign cleaned labels."""
 import os
+from abc import ABC, abstractmethod
 from typing import List
 
 import pandas as pd
@@ -31,9 +32,13 @@ def slice_plant_signal(plant_signal: List[float]) -> List[List[float]]:
     return [[0.0, 0.1], [0.0, 0.1], [0.0, 0.1], [0.0, 0.1]]
 
 
+def read_clean_emotions():
+    pass
+
+
 if __name__ == "__main__":
     csv_file_path = EMOTIONS_DIR / "team_01/2023-01-10/sdm_2023-01-10_team_01_8333_9490.csv"
     wav_file_path = INTERIM_PLANT_DATA_DIR / "team_01/2023-01-10/clip_0_8583_9740.wav"
 
     read_plant_file(wav_file_path)
-    read_plant_file(csv_file_path)
+    #read_plant_file(csv_file_path)
