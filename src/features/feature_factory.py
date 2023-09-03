@@ -8,6 +8,7 @@ methods. For this project, spectral, temporal, and statistical features are of i
 2. For other features: 1s slices are needed as we compute manual features for these slices. LOAD 1s slices from disk. 
 
 Wavelet
+PCA
 """
 from src.data.data_segmentation import read_plant_file
 
