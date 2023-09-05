@@ -1,10 +1,11 @@
 """ Build custom datasets. """
 import pickle
 
-from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT
+from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT, INT_TO_EKMAN_NEUTRAL_DICT
 from torch.utils.data import DataLoader, random_split, TensorDataset
 import torch
 import numpy as np
+import pandas as pd
 
 
 class EkmanDataset:
@@ -60,9 +61,14 @@ class EkmanDataset:
         self.train_data, self.val_data, self.test_data = random_split(self.dataset, [train_size, val_size, test_size])
 
     @staticmethod
-    def get_label_distribution():
-        # TODO: implement method to plot number of samples per class
-        pass
+    def get_label_distribution(dataloader):
+        # TODO: dataloader_labels = get_labels(dataloader)
+        dataloader_labels = []
+        for batch_data, batch_labels in train_dataloader:
+            dataloader_labels.extend([int(i) for i in batch_labels])
+        df = pd.DataFrame([map_int_to_label(j) for j in dataloader_labels], columns=['Class'])
+        class_counts = df['Class'].value_counts()
+        return class_counts
 
     def create_data_loader(self, batch_size=32):
         # TODO: How to handle case when there are only 29/32 samples left? Padding or doesn't matter?
@@ -73,6 +79,10 @@ class EkmanDataset:
         return train_loader, val_loader, test_loader
 
 
+def map_int_to_label(emotion: int):
+    return INT_TO_EKMAN_NEUTRAL_DICT[emotion]
+
+
 if __name__ == "__main__":
     path_to_pickle = DATASETS_DIR / "sdm_2023-01-10_team_01_8333_9490.pkl"
     dataset = EkmanDataset(path_to_pickle)
@@ -81,5 +91,9 @@ if __name__ == "__main__":
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
 
-    for i, j in train_dataloader:
-        print(i)
+    output = dataset.get_label_distribution(train_dataloader)
+    print("OUTPUT:", output)
+
+
+    #for i, j in train_dataloader:
+    #    print(i)
