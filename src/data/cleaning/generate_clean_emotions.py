@@ -7,7 +7,16 @@ from typing import Union, List, Literal
 
 from src.data.teamwork_durations import custom_sort, compare_indicated_tw_duration
 from src.utils.constants import (EKMAN_EMOTIONS_NEUTRAL, EMOTIONS_DIR, TEAM_NAMES, TEAMWORK_SESSION_DAYS,
-                                 INTERIM_PLANT_DATA_DIR, LABELS_DIR)
+                                 INTERIM_PLANT_DATA_DIR, LABELS_DIR, LOGS_DIR)
+
+import logging
+from scipy.io import wavfile
+
+logging.basicConfig(filename=LOGS_DIR / 'data-cleaning/generate_clean_emotions_all.log',
+                    filemode='w',  # when creating new file change this to "a" for append
+                    level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 def read_emotions_csv(filepath: str) -> pd.DataFrame:
@@ -107,11 +116,14 @@ def _test():
     print(read_emotions_csv(csv_file_path)[0:10])
 
 
-def _main():
+def _main(save_file=False):
     """
     Create .csv files for all valid teams and days and store emotion-frame pairs.
     """
-    save_file = True
+    deviating_clip_length_and_label = pd.DataFrame(columns=['path_clip', 'length_clip', "length_clip_div_5",
+                                                            "path_interim", "length_interim", 'durations_match',
+                                                            "difference_lengths"])
+
     # iterate over all files and extract emotions.
     for t in TEAM_NAMES:
         for d in TEAMWORK_SESSION_DAYS:
@@ -126,33 +138,56 @@ def _main():
                 # lambda function needed because otherwise I could not use self-implemented custom_sort
                 # because it takes more than one argument.
                 clip_files = sorted(clip_files, key=lambda x: custom_sort(x, mode="emotions"))
+                logging.info(f"Sorted clip_files of {t} on day {d}: {clip_files}")
 
                 # 2. Files with interim plant teamwork signal data
                 interim_data_files = os.listdir(interim_data_path)
                 interim_data_files = sorted(interim_data_files, key=custom_sort)
+                logging.info(f"Sorted interim_data_files of {t} on day {d}: {interim_data_files}")
 
                 for i in range(len(clip_files)):
                     equal_durations = compare_indicated_tw_duration(interim_data_files[i], clip_files[i])
+                    logging.info(f"Equal teamwork duration for clip_file and interim_data_file: {equal_durations}")
 
-                    if equal_durations:
-                        csv_path = os.path.join(emotions_path, clip_files[i])
-                        df_emotions = extract_labels(csv_path)
+                    csv_path = os.path.join(emotions_path, clip_files[i])
+                    df_emotions = extract_labels(csv_path)
+                    logging.info(f"Length of df_emotions: {len(df_emotions)/5.0}")
 
-                        if save_file:
-                            label_path = os.path.join(LABELS_DIR, t, d)
+                    plant_signal_path = os.path.join(interim_data_path, interim_data_files[i])
+                    _, plant_signal = wavfile.read(plant_signal_path)
 
-                            if not os.path.exists(label_path):
-                                os.makedirs(label_path)
+                    logging.info(f"Length of interim_data_files[i] 1s slices: {len(plant_signal)/10000}")
 
-                            fragment = interim_data_files[i].split(".")[0]
-                            file_path = os.path.join(label_path, f"emotions_{fragment}.csv")
+                    deviating_clip_length_and_label.loc[len(deviating_clip_length_and_label)] = \
+                        [os.path.join(t, d, clip_files[i]), len(df_emotions), len(df_emotions)/5,
+                         interim_data_files[i], len(plant_signal)/10000, equal_durations,
+                         (len(plant_signal) / 10000) - (len(df_emotions)/5)
+                         ]
 
-                            if not os.path.exists(file_path):
-                                df_emotions.to_csv(file_path, index=False)
+                    if save_file:
+                        label_path = os.path.join(LABELS_DIR, t, d)
+
+                        if not os.path.exists(label_path):
+                            os.makedirs(label_path)
+
+                        fragment = interim_data_files[i].split(".")[0]
+                        file_path = os.path.join(label_path, f"emotions_{fragment}.csv")
+
+                        logging.info(f"Original emotion clip label: {clip_files[i]}")
+                        logging.info(f"Cleaned emotions path: {file_path}")
+                        logging.info(f"Cleaned signal path: {interim_data_files[i]}\n-----")
+
+                        if not os.path.exists(file_path):
+                            df_emotions.to_csv(file_path, index=False)
 
                 print("1 Day done!")
+    if not os.path.isfile(os.path.join(LOGS_DIR / "data-cleaning",
+                                       "length_comparison_clip_and_its_label.xlsx")):
+        deviating_clip_length_and_label.to_excel(os.path.join(LOGS_DIR / "data-cleaning",
+                                                              "length_comparison_clip_and_its_label.xlsx"))
 
 
 if __name__ == "__main__":
-    _test()
-    _main()
+    # _test()
+    _main(save_file=True)
+    # _main(save_file=True)
