@@ -1,6 +1,8 @@
 """
 Aggregate the data from various folders (all teams and days) in a way that it complies with the defined
 classification problem (7-class, multiple binary classification, ...)
+
+LIKELY TO BE DELETED! 05.09.2023
 """
 
 import os
@@ -19,7 +21,7 @@ class DataAggregator(ABC):
         pass
 
 
-class SevenClassesAggregator():
+class SevenClassesAggregator:
     def __init__(self):
         super().__init__()
 
@@ -61,7 +63,7 @@ def load_dataset_from_folders(root_path):
 
 emotion_files_dict = load_dataset_from_folders(LABELS_DIR)
 data_files_dict = load_dataset_from_folders(CLEANED_DATA_DIR)
-print(emotion_files_dict["team_01"])
+print(emotion_files_dict)
 print(data_files_dict["team_01"])
 
 count = 0
@@ -69,7 +71,7 @@ count = 0
 for team in TEAM_NAMES_CLEANED:
     print(team)
     # TODO: fix problem; len(emotion_files_dict) should be 11 for team_01 but it is 10 I think.
-    for i in range(len(emotion_files_dict)):
+    for i in range(len(emotion_files_dict[team])):
         print(i)
         print(emotion_files_dict[team])
         print(emotion_files_dict[team][i])
@@ -84,10 +86,10 @@ for team in TEAM_NAMES_CLEANED:
             print("Emotion file and data file match.")
             print(interval_data_file)
         else:
-            #raise ValueError(f"Information about the teamwork session duration in {emotion_file} and {data_file} do"
-            #                 f"not match. ")
+            raise ValueError(f"Information about the teamwork session duration in {emotion_file} and {data_file} do"
+                             f"not match. ")
             count += 1
 
         # print(interval_data_file)
 
-print(count)
+print("Count:", count)
