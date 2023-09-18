@@ -64,7 +64,7 @@ class EkmanDataset:
     def get_label_distribution(dataloader):
         # TODO: dataloader_labels = get_labels(dataloader)
         dataloader_labels = []
-        for batch_data, batch_labels in train_dataloader:
+        for batch_data, batch_labels in dataloader:
             dataloader_labels.extend([int(i) for i in batch_labels])
         df = pd.DataFrame([map_int_to_label(j) for j in dataloader_labels], columns=['Class'])
         class_counts = df['Class'].value_counts()

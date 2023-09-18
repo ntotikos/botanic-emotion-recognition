@@ -15,6 +15,9 @@ DATASETS_DIR = PROJECT_ROOT / "data/datasets"  # TODO: update once target datase
 
 LOGS_DIR = PROJECT_ROOT / "logs"
 
+RESULTS_DIR = PROJECT_ROOT / "results"
+MODELS_DIR = RESULTS_DIR / "models"
+
 
 # Project Specifics
 TEAM_NAMES = ["team_01", "team_02", "team_03", "team_04", "team_05", "team_06", "team_07", "team_08", "team_09",

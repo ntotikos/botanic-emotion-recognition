@@ -2,9 +2,10 @@
 from src.data.dataset_builder import EkmanDataset
 from src.models.deeplearning_classifier import DLClassifier
 import torch
-from tqdm import tqdm
 
-from src.utils.constants import DATASETS_DIR
+from src.utils.constants import DATASETS_DIR, MODELS_DIR
+import os
+import pickle
 
 
 class DenseClassifier(DLClassifier):
@@ -120,7 +121,7 @@ def _main_one_file():
             print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
 
-def _main():
+def _main(save=True):
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
     dataset.get_data_and_labels()
@@ -147,7 +148,7 @@ def _main():
     model.setup_training()
 
     # Number of epochs
-    epochs = 100
+    epochs = 10
 
     # Training loop
     for epoch in range(epochs):
@@ -167,6 +168,10 @@ def _main():
 
         if (epoch + 1) % 10 == 0:
             print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+
+    if save:
+        with open(os.path.join(MODELS_DIR, 'fc_classifier_v1.pkl'), 'wb') as pkl:
+            pickle.dump(model, pkl)
 
 
 if __name__ == "__main__":
