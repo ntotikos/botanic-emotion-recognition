@@ -147,7 +147,7 @@ def _main():
     model.setup_training()
 
     # Number of epochs
-    epochs = 50
+    epochs = 100
 
     # Training loop
     for epoch in range(epochs):
