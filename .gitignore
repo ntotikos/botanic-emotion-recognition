@@ -10,7 +10,8 @@ data/datasets
 
 notebooks/playground.ipynb
 
-
+results/models
+results/figures
 
 # Models
 
