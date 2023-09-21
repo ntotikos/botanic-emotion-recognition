@@ -75,36 +75,6 @@ kpi3.metric(
 x = np.linspace(0, 10, 100)
 y = np.sin(x)
 
-plt.figure(figsize=(10, 5))
-plt.plot(x, y)
-plt.title('Sin Wave using Matplotlib')
-plt.xlabel('X Axis')
-plt.ylabel('Y Axis')
-
-st.pyplot(plt)
-
-# create two columns for charts
-fig_col1, fig_col2 = st.columns(2)
-
-with fig_col1:
-    st.markdown("### First Chart")
-    st.pyplot(plt)
-
-with fig_col2:
-    st.markdown("### Second Chart")
-    st.pyplot(plt)
-
-st.markdown("### Detailed Data View")
-st.dataframe(df)
-
-
-#for seconds in range(200):
-
-#    df['new sepal length (cm)'] = df['sepal length (cm)'] * np.random.choice(range(1, 5))
-#    df['new petal width (cm)'] = df['petal width (cm)'] * np.random.choice(range(1, 5))
-#    time.sleep(1)
-
-
 # near real-time / live feed simulation
 for seconds in range(200):
     df['new sepal length (cm)'] = df['sepal length (cm)'] * np.random.choice(range(1, 5))
@@ -139,14 +109,17 @@ for seconds in range(200):
         # create two columns for charts
         fig_col1, fig_col2 = st.columns(2)
         with fig_col1:
-            st.markdown("### First Chart")
-            fig = px.density_heatmap(
-                data_frame=df, y='new sepal length (cm)', x="sepal length (cm)"
+            st.markdown("### Plant Signal")
+            # fig = px.density_heatmap(
+            #     data_frame=df, y='new sepal length (cm)', x="sepal length (cm)"
+            # )
+            fig = px.scatter(
+                x=x, y=y
             )
             st.write(fig)
 
         with fig_col2:
-            st.markdown("### Second Chart")
+            st.markdown("### Configuration")
             fig2 = px.histogram(data_frame=df, x='new sepal length (cm)')
             st.write(fig2)
 
