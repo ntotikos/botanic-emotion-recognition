@@ -14,6 +14,7 @@ st.set_page_config(
     page_title="Real-Time Data Science Dashboard",
     page_icon="✅",
     layout="wide",
+    initial_sidebar_state="auto"
 )
 
 # Get data.
@@ -119,9 +120,20 @@ for seconds in range(200):
             st.write(fig)
 
         with fig_col2:
-            st.markdown("### Configuration")
-            fig2 = px.histogram(data_frame=df, x='new sepal length (cm)')
-            st.write(fig2)
+            st.button('Click here')
+            st.checkbox('Check')
+            st.radio('Radio', [1, 2, 3])
+            st.selectbox('Select', [1, 2, 3])
+            st.multiselect('Multiple selection', [21, 85, 53])
+            st.slider('Slide', min_value=10, max_value=20)
+            st.select_slider('Slide to select', options=[1, 2, 3, 4])
+            st.text_input('Enter some text')
+            st.number_input('Enter a number')
+            st.text_area('Text area')
+            st.date_input('Date input')
+            st.time_input('Time input')
+            st.file_uploader('File uploader')
+            st.color_picker('Color Picker')
 
         st.markdown("### Detailed Data View")
         st.dataframe(df)
