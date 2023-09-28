@@ -17,6 +17,7 @@ LOGS_DIR = PROJECT_ROOT / "logs"
 
 RESULTS_DIR = PROJECT_ROOT / "results"
 MODELS_DIR = RESULTS_DIR / "models"
+FIGURES_DIR = RESULTS_DIR / "figures"
 
 
 # Project Specifics
