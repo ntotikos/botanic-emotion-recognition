@@ -6,7 +6,10 @@ import logging
 
 from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR
 import os
-import pickle
+import pickle #TODO: Instead of pickle maybe use ...lib
+
+import optuna
+from optuna.trial import TrialState
 
 logging.basicConfig(filename=LOGS_DIR / 'training/fc_classifier_try.log',
                     filemode='w',
@@ -32,8 +35,8 @@ class DenseClassifier(DLClassifier):
         return self.forward(x)
 
     def setup_model(self):
-        input_dim = 3
-        output_dim = 2  # For Ekman neutral: 7
+        input_dim = 10000
+        output_dim = 7  # For Ekman neutral: 7
 
         self.model = torch.nn.Sequential(
             torch.nn.Linear(input_dim, 128),
@@ -41,7 +44,7 @@ class DenseClassifier(DLClassifier):
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
             torch.nn.Linear(64, output_dim),
-            torch.nn.Softmax(dim=1)
+            # torch.nn.Softmax(dim=1) -> not needed because torch.nn.CrossEntropyLoss inherently applies softmax
         )
 
     def forward(self, x):
@@ -128,7 +131,10 @@ def _main_one_file():
             print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
 
-def _main(save=True):
+def objective(trial, save=True):
+    DEVICE = torch.device("cpu")
+
+    # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
     dataset.get_data_and_labels()
@@ -138,21 +144,15 @@ def _main(save=True):
 
     dataset.get_label_distribution(train_dataloader)
 
-    # TODO: use correct input and output dimensions
-    input_dim = 10000
-    output_dim = 7
-    # Model
+    # Generate the model.
     model = DenseClassifier("params")
     model.setup_model()
-    model.model = torch.nn.Sequential(
-        torch.nn.Linear(input_dim, 128),
-        torch.nn.ReLU(),
-        torch.nn.Linear(128, 64),
-        torch.nn.ReLU(),
-        torch.nn.Linear(64, output_dim)
-        # torch.nn.Softmax(dim=1) -> not needed because torch.nn.CrossEntropyLoss inherently applies softmax
-        )
     model.setup_training()
+
+    # Hyperparameter suggestion.
+    lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
+    hidden_dim = trial.suggest_int("hidden_dim", 32, 256, log=True)
+    # could also test optimizer but I'll go with Adam 
 
     # Number of epochs
     epochs = 10
@@ -175,8 +175,7 @@ def _main(save=True):
 
             logging.info(f"[{epoch + 1}/{epochs}]:training loss: {loss.item}")
 
-        if (epoch + 1) % 5 == 0:
-            print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
     if save:
         with open(os.path.join(MODELS_DIR, 'fc_classifier_v1.pkl'), 'wb') as pkl:
@@ -185,4 +184,4 @@ def _main(save=True):
 
 if __name__ == "__main__":
     # _main_pseudo_training()
-    _main()
+    objective()
