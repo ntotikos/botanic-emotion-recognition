@@ -15,7 +15,6 @@ logging.basicConfig(filename=LOGS_DIR / 'training/fc_classifier_try.log',
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
-
 class DenseClassifier(DLClassifier):
     """
     ...
@@ -187,3 +186,4 @@ def _main(save=True):
 if __name__ == "__main__":
     # _main_pseudo_training()
     _main()
+    print("Hi.")
