@@ -186,4 +186,3 @@ def _main(save=True):
 if __name__ == "__main__":
     # _main_pseudo_training()
     _main()
-    print("Hi.")
