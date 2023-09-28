@@ -131,7 +131,7 @@ def _main_one_file():
             print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
 
-def objective(trial, save=True):
+def objective(trial, save=False):
     DEVICE = torch.device("cpu")
 
     # Get the TS dataset.
@@ -152,13 +152,14 @@ def objective(trial, save=True):
     # Hyperparameter suggestion.
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
     hidden_dim = trial.suggest_int("hidden_dim", 32, 256, log=True)
-    # could also test optimizer but I'll go with Adam 
+    # could also test optimizer but I'll go with Adam
 
     # Number of epochs
     epochs = 10
 
     # Training loop
     for epoch in range(epochs):
+        model.model.train()
         for batch_data, batch_labels in train_dataloader:
             # Zero gradients
             model.optimizer.zero_grad()
@@ -173,7 +174,24 @@ def objective(trial, save=True):
             loss.backward()
             model.optimizer.step()
 
-            logging.info(f"[{epoch + 1}/{epochs}]:training loss: {loss.item}")
+            logging.info(f"Epoch [{epoch + 1}/{epochs}]: training loss: {loss.item():.4f}")
+
+        model.model.eval()
+        correct = 0
+        with torch.no_grad():
+            for batch_data, batch_labels in val_dataloader:
+                output = model(batch_data)  # 32 x 7
+                pred = output.argmax(dim=1, keepdims=True)  # 32 x 1
+                correct += pred.eq(batch_labels.view_as(pred)).sum().item()  # assure same dimensions
+
+        accuracy = correct / len(val_dataloader.dataset)
+
+        print(f"Accuracy: {accuracy}")
+
+        trial.report(accuracy, epoch)
+        # Handle pruning based on the intermediate value.
+        if trial.should_prune():
+            raise optuna.exceptions.TrialPruned()
 
         print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
@@ -181,7 +199,29 @@ def objective(trial, save=True):
         with open(os.path.join(MODELS_DIR, 'fc_classifier_v1.pkl'), 'wb') as pkl:
             pickle.dump(model, pkl)
 
+    return accuracy
+
 
 if __name__ == "__main__":
     # _main_pseudo_training()
-    objective()
+    #objective()
+
+    study = optuna.create_study(study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db", direction="maximize")
+    study.optimize(objective, n_trials=10, timeout=600)
+
+    pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
+    complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
+
+    print("Study statistics: ")
+    print("  Number of finished trials: ", len(study.trials))
+    print("  Number of pruned trials: ", len(pruned_trials))
+    print("  Number of complete trials: ", len(complete_trials))
+
+    print("Best trial:")
+    trial_ = study.best_trial
+
+    print("  Value: ", trial_.value)
+
+    print("  Params: ")
+    for key, value in trial_.params.items():
+        print("    {}: {}".format(key, value))
