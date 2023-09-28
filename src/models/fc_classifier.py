@@ -2,10 +2,18 @@
 from src.data.dataset_builder import EkmanDataset
 from src.models.deeplearning_classifier import DLClassifier
 import torch
+import logging
 
-from src.utils.constants import DATASETS_DIR, MODELS_DIR
+from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR
 import os
 import pickle
+
+logging.basicConfig(filename=LOGS_DIR / 'training/fc_classifier_try.log',
+                    filemode='w',
+                    level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p')
+
 
 
 class DenseClassifier(DLClassifier):
@@ -166,7 +174,9 @@ def _main(save=True):
             loss.backward()
             model.optimizer.step()
 
-        if (epoch + 1) % 10 == 0:
+            logging.info(f"[{epoch + 1}/{epochs}]:training loss: {loss.item}")
+
+        if (epoch + 1) % 5 == 0:
             print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
     if save:
