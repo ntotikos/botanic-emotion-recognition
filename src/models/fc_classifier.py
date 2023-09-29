@@ -8,6 +8,8 @@ from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR
 import os
 import pickle #TODO: Instead of pickle maybe use ...lib
 
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+
 import optuna
 from optuna.trial import TrialState
 
@@ -176,6 +178,9 @@ def objective(trial, save=False):
 
             logging.info(f"Epoch [{epoch + 1}/{epochs}]: training loss: {loss.item():.4f}")
 
+        all_preds = []
+        all_labels = []
+
         model.model.eval()
         correct = 0
         with torch.no_grad():
@@ -184,9 +189,27 @@ def objective(trial, save=False):
                 pred = output.argmax(dim=1, keepdims=True)  # 32 x 1
                 correct += pred.eq(batch_labels.view_as(pred)).sum().item()  # assure same dimensions
 
+                predicted = output.argmax(dim=1)
+                all_preds.extend(predicted.numpy())
+                all_labels.extend(batch_labels.numpy())
+
         accuracy = correct / len(val_dataloader.dataset)
+        acc = accuracy_score(all_labels, all_preds)
+        print(f"len(all_preds): {len(all_preds)}")
+        print(f"len(all_labels): {len(all_labels)}")
+
+        accuracy = accuracy_score(all_labels, all_preds)
+        f1_class = f1_score(all_labels, all_preds, average=None)
+        f1_micro = f1_score(all_labels, all_preds, average="micro")
+        f1_weighted = f1_score(all_labels, all_preds, average="weighted")
+        #  precision = precision_score(all_labels, all_preds, average=None, zero_division=1)
+        #  recall = recall_score(all_labels, all_preds, average=None)
 
         print(f"Accuracy: {accuracy}")
+        print(f"Acc: {acc}")
+        print(f"F1 class: {f1_class}")
+        print(f"F1 micro: {f1_micro}")
+        print(f"F1 weighted: {f1_weighted}")
 
         trial.report(accuracy, epoch)
         # Handle pruning based on the intermediate value.
