@@ -52,7 +52,7 @@ class DenseClassifier(DLClassifier):
     def forward(self, x):
         x = self.model(x)
         return x
-    
+
 
 def objective(trial, save=False):
     DEVICE = torch.device("cpu")
@@ -73,6 +73,7 @@ def objective(trial, save=False):
     model.setup_training()
 
     # Hyperparameter suggestion.
+    # TODO: Pass LR and Hidden_dim so that it is being used!
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
     hidden_dim = trial.suggest_int("hidden_dim", 32, 256, log=True)
     # could also test optimizer but I'll go with Adam
@@ -147,9 +148,6 @@ def objective(trial, save=False):
 
 
 if __name__ == "__main__":
-    # _main_pseudo_training()
-    #objective()
-
     study = optuna.create_study(study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db", direction="maximize")
     study.optimize(objective, n_trials=10, timeout=600)
 
