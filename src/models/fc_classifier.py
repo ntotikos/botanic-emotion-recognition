@@ -8,7 +8,7 @@ from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR
 import os
 import pickle #TODO: Instead of pickle maybe use ...lib
 
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+from sklearn.metrics import f1_score, accuracy_score
 
 import optuna
 from optuna.trial import TrialState
@@ -55,8 +55,6 @@ class DenseClassifier(DLClassifier):
 
 
 def objective(trial, save=False):
-    DEVICE = torch.device("cpu")
-
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
@@ -76,10 +74,9 @@ def objective(trial, save=False):
     # TODO: Pass LR and Hidden_dim so that it is being used!
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
     hidden_dim = trial.suggest_int("hidden_dim", 32, 256, log=True)
-    # could also test optimizer but I'll go with Adam
 
     # Number of epochs
-    epochs = 10
+    epochs = 2
 
     # Training loop
     for epoch in range(epochs):
@@ -102,6 +99,9 @@ def objective(trial, save=False):
 
         all_preds = []
         all_labels = []
+        f1_class_values = []
+        f1_micro_values = []
+        f1_weighted_values = []
 
         model.model.eval()
         correct = 0
@@ -115,30 +115,33 @@ def objective(trial, save=False):
                 all_preds.extend(predicted.numpy())
                 all_labels.extend(batch_labels.numpy())
 
-        accuracy = correct / len(val_dataloader.dataset)
-        acc = accuracy_score(all_labels, all_preds)
-        print(f"len(all_preds): {len(all_preds)}")
-        print(f"len(all_labels): {len(all_labels)}")
-
         accuracy = accuracy_score(all_labels, all_preds)
         f1_class = f1_score(all_labels, all_preds, average=None)
         f1_micro = f1_score(all_labels, all_preds, average="micro")
         f1_weighted = f1_score(all_labels, all_preds, average="weighted")
-        #  precision = precision_score(all_labels, all_preds, average=None, zero_division=1)
-        #  recall = recall_score(all_labels, all_preds, average=None)
+
+        f1_class_values.append(f1_class.tolist())  # convert to list because of conversion to db object
+        f1_micro_values.append(f1_micro)
+        f1_weighted_values.append(f1_weighted)
 
         print(f"Accuracy: {accuracy}")
-        print(f"Acc: {acc}")
         print(f"F1 class: {f1_class}")
         print(f"F1 micro: {f1_micro}")
         print(f"F1 weighted: {f1_weighted}")
 
+        # Log additional metrics
         trial.report(accuracy, epoch)
+
         # Handle pruning based on the intermediate value.
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
 
         print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+
+    # Log additional eval metrics
+    trial.set_user_attr("f1_class", f1_class_values)
+    trial.set_user_attr("f1_micro", f1_micro_values)
+    trial.set_user_attr("f1_weighted", f1_weighted_values)
 
     if save:
         with open(os.path.join(MODELS_DIR, 'fc_classifier_v1.pkl'), 'wb') as pkl:
@@ -149,7 +152,7 @@ def objective(trial, save=False):
 
 if __name__ == "__main__":
     study = optuna.create_study(study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db", direction="maximize")
-    study.optimize(objective, n_trials=10, timeout=600)
+    study.optimize(objective, n_trials=2, timeout=600)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
