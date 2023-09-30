@@ -41,9 +41,9 @@ class DenseClassifier(DLClassifier):
         output_dim = 7  # For Ekman neutral: 7
 
         self.model = torch.nn.Sequential(
-            torch.nn.Linear(input_dim, 128),
+            torch.nn.Linear(input_dim, self.n_hidden),
             torch.nn.ReLU(),
-            torch.nn.Linear(128, 64),
+            torch.nn.Linear(self.n_hidden, 64),
             torch.nn.ReLU(),
             torch.nn.Linear(64, output_dim),
             # torch.nn.Softmax(dim=1) -> not needed because torch.nn.CrossEntropyLoss inherently applies softmax
@@ -73,10 +73,18 @@ def objective(trial, save=False):
     # Hyperparameter suggestion.
     # TODO: Pass LR and Hidden_dim so that it is being used!
     lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
-    hidden_dim = trial.suggest_int("hidden_dim", 32, 256, log=True)
+    exponent = trial.suggest_int("hidden_dim", 3, 8)
+
+    hidden_dim = 2 ** exponent
+
+    model.learning_rate = lr
+    model.n_hidden = hidden_dim
+
+    print(model.learning_rate)
+    print(model.n_hidden)
 
     # Number of epochs
-    epochs = 2
+    epochs = 3
 
     # Training loop
     for epoch in range(epochs):
@@ -100,7 +108,6 @@ def objective(trial, save=False):
         all_preds = []
         all_labels = []
         f1_class_values = []
-        f1_micro_values = []
         f1_weighted_values = []
 
         model.model.eval()
@@ -117,16 +124,13 @@ def objective(trial, save=False):
 
         accuracy = accuracy_score(all_labels, all_preds)
         f1_class = f1_score(all_labels, all_preds, average=None)
-        f1_micro = f1_score(all_labels, all_preds, average="micro")
         f1_weighted = f1_score(all_labels, all_preds, average="weighted")
 
         f1_class_values.append(f1_class.tolist())  # convert to list because of conversion to db object
-        f1_micro_values.append(f1_micro)
         f1_weighted_values.append(f1_weighted)
 
         print(f"Accuracy: {accuracy}")
         print(f"F1 class: {f1_class}")
-        print(f"F1 micro: {f1_micro}")
         print(f"F1 weighted: {f1_weighted}")
 
         # Log additional metrics
@@ -140,7 +144,6 @@ def objective(trial, save=False):
 
     # Log additional eval metrics
     trial.set_user_attr("f1_class", f1_class_values)
-    trial.set_user_attr("f1_micro", f1_micro_values)
     trial.set_user_attr("f1_weighted", f1_weighted_values)
 
     if save:
@@ -152,7 +155,7 @@ def objective(trial, save=False):
 
 if __name__ == "__main__":
     study = optuna.create_study(study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db", direction="maximize")
-    study.optimize(objective, n_trials=2, timeout=600)
+    study.optimize(objective, n_trials=4, timeout=600)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
