@@ -79,12 +79,12 @@ def objective(trial, save=False):
     model.n_hidden_1 = hidden_dim_1
     model.n_hidden_2 = hidden_dim_2
 
-    print(model.learning_rate)
-    print(model.n_hidden_1)
-    print(model.n_hidden_2)
+    #print(model.learning_rate)
+    #print(model.n_hidden_1)
+    #print(model.n_hidden_2)
 
     # Number of epochs
-    epochs = 50
+    epochs = 40
 
     # Training loop
     for epoch in range(epochs):
@@ -157,13 +157,13 @@ if __name__ == "__main__":
     search_space = {
         'lr': [0.0001, 0.001, 0.01, 0.1],
         'hidden_dim_1': [2 ** i for i in range(3, 9)],
-        'hidden_dim_2': [2 ** i for i in range(3, 8)]
+        'hidden_dim_2': [2 ** i for i in range(3, 7)]
     }
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
     study = optuna.create_study(sampler=sampler, study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db",
                                 direction="maximize", load_if_exists=True)
-    study.optimize(objective, n_trials=120, timeout=600)
+    study.optimize(objective, n_trials=96)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
