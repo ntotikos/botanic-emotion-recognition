@@ -79,9 +79,9 @@ def objective(trial, save=False):
     model.n_hidden_1 = hidden_dim_1
     model.n_hidden_2 = hidden_dim_2
 
-    #print(model.learning_rate)
-    #print(model.n_hidden_1)
-    #print(model.n_hidden_2)
+    print(model.learning_rate)
+    print(model.n_hidden_1)
+    print(model.n_hidden_2)
 
     # Number of epochs
     epochs = 40
@@ -140,7 +140,7 @@ def objective(trial, save=False):
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
 
-        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+        #print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
     # Log additional eval metrics
     trial.set_user_attr("f1_class", f1_class_values)
