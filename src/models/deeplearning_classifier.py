@@ -16,7 +16,9 @@ class DLClassifier(PlantClassifier):
         self.optimizer = None
         self.model = None
         self.learning_rate = 0.0001
-        self.n_hidden = 128
+        self.n_hidden_1 = 128
+        self.n_hidden_2 = 64
+
 
     def __call__(self, **kwargs):
         """

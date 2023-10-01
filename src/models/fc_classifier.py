@@ -41,11 +41,11 @@ class DenseClassifier(DLClassifier):
         output_dim = 7  # For Ekman neutral: 7
 
         self.model = torch.nn.Sequential(
-            torch.nn.Linear(input_dim, self.n_hidden),
+            torch.nn.Linear(input_dim, self.n_hidden_1),
             torch.nn.ReLU(),
-            torch.nn.Linear(self.n_hidden, 64),
+            torch.nn.Linear(self.n_hidden_1, self.n_hidden_2),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, output_dim),
+            torch.nn.Linear(self.n_hidden_2, output_dim),
             # torch.nn.Softmax(dim=1) -> not needed because torch.nn.CrossEntropyLoss inherently applies softmax
         )
 
@@ -72,19 +72,23 @@ def objective(trial, save=False):
 
     # Hyperparameter suggestion.
     # TODO: Pass LR and Hidden_dim so that it is being used!
-    lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
-    exponent = trial.suggest_int("hidden_dim", 3, 8)
+    lr = trial.suggest_categorical('lr', [0.0001, 0.001, 0.01, 0.1])
 
-    hidden_dim = 2 ** exponent
+    h1_exponent = trial.suggest_int("hidden_dim_1", 3, 8)
+    h2_exponent = trial.suggest_int("hidden_dim_2", 3, 7)
+
+    hidden_dim_1 = 2 ** h1_exponent
+    hidden_dim_2 = 2 ** h2_exponent
 
     model.learning_rate = lr
-    model.n_hidden = hidden_dim
+    model.n_hidden_1 = hidden_dim_1
+    model.n_hidden_2 = hidden_dim_2
 
     print(model.learning_rate)
-    print(model.n_hidden)
+    print(model.n_hidden_1)
 
     # Number of epochs
-    epochs = 3
+    epochs = 50
 
     # Training loop
     for epoch in range(epochs):
@@ -154,8 +158,9 @@ def objective(trial, save=False):
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db", direction="maximize")
-    study.optimize(objective, n_trials=4, timeout=600)
+    study = optuna.create_study(study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db", direction="maximize",
+                                load_if_exists=True)
+    study.optimize(objective, n_trials=120, timeout=600)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])

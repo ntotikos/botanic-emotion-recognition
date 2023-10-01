@@ -10,9 +10,9 @@ study = optuna.load_study(study_name="fc_study", storage=study_label)
 
 fig = optuna.visualization.plot_optimization_history(study)
 
-fig = optuna.visualization.plot_param_importances(study)
+#fig = optuna.visualization.plot_param_importances(study)
 
-fig = optuna.visualization.plot_slice(study)
+#fig = optuna.visualization.plot_slice(study)
 
 #fig = optuna.visualization.plot_contour(study, params=['lr', 'hidden_dim'])
 
