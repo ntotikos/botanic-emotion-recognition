@@ -71,14 +71,9 @@ def objective(trial, save=False):
     model.setup_training()
 
     # Hyperparameter suggestion.
-    # TODO: Pass LR and Hidden_dim so that it is being used!
     lr = trial.suggest_categorical('lr', [0.0001, 0.001, 0.01, 0.1])
-
-    h1_exponent = trial.suggest_int("hidden_dim_1", 3, 8)
-    h2_exponent = trial.suggest_int("hidden_dim_2", 3, 7)
-
-    hidden_dim_1 = 2 ** h1_exponent
-    hidden_dim_2 = 2 ** h2_exponent
+    hidden_dim_1 = trial.suggest_categorical('hidden_dim_1', [2 ** i for i in range(3, 9)])
+    hidden_dim_2 = trial.suggest_categorical('hidden_dim_2', [2 ** i for i in range(3, 8)])
 
     model.learning_rate = lr
     model.n_hidden_1 = hidden_dim_1
@@ -86,6 +81,7 @@ def objective(trial, save=False):
 
     print(model.learning_rate)
     print(model.n_hidden_1)
+    print(model.n_hidden_2)
 
     # Number of epochs
     epochs = 50
@@ -107,7 +103,7 @@ def objective(trial, save=False):
             loss.backward()
             model.optimizer.step()
 
-            logging.info(f"Epoch [{epoch + 1}/{epochs}]: training loss: {loss.item():.4f}")
+            #logging.info(f"Epoch [{epoch + 1}/{epochs}]: training loss: {loss.item():.4f}")
 
         all_preds = []
         all_labels = []
@@ -133,9 +129,9 @@ def objective(trial, save=False):
         f1_class_values.append(f1_class.tolist())  # convert to list because of conversion to db object
         f1_weighted_values.append(f1_weighted)
 
-        print(f"Accuracy: {accuracy}")
-        print(f"F1 class: {f1_class}")
-        print(f"F1 weighted: {f1_weighted}")
+        #print(f"Accuracy: {accuracy}")
+        #print(f"F1 class: {f1_class}")
+        #print(f"F1 weighted: {f1_weighted}")
 
         # Log additional metrics
         trial.report(accuracy, epoch)
@@ -158,8 +154,15 @@ def objective(trial, save=False):
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db", direction="maximize",
-                                load_if_exists=True)
+    search_space = {
+        'lr': [0.0001, 0.001, 0.01, 0.1],
+        'hidden_dim_1': [2 ** i for i in range(3, 9)],
+        'hidden_dim_2': [2 ** i for i in range(3, 8)]
+    }
+
+    sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
+    study = optuna.create_study(sampler=sampler, study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db",
+                                direction="maximize", load_if_exists=True)
     study.optimize(objective, n_trials=120, timeout=600)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
