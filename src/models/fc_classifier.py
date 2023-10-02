@@ -5,6 +5,8 @@ import torch
 import logging
 
 from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR
+from src.utils.reproducibility import set_seed
+
 import os
 import pickle #TODO: Instead of pickle maybe use ...lib
 
@@ -55,6 +57,8 @@ class DenseClassifier(DLClassifier):
 
 
 def objective(trial, save=False):
+    set_seed(42)
+
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
@@ -84,7 +88,7 @@ def objective(trial, save=False):
     print(model.n_hidden_2)
 
     # Number of epochs
-    epochs = 40
+    epochs = 20  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):
