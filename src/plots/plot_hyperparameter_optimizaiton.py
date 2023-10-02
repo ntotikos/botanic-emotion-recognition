@@ -5,9 +5,10 @@ from src.utils.constants import FIGURES_DIR
 import os
 
 
-study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hyperparam_opt.db")
+study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hyperparam_opt_96_trials.db")
 study = optuna.load_study(study_name="fc_study", storage=study_label)
 
+#print(study.trials)
 fig = optuna.visualization.plot_optimization_history(study)
 
 #fig = optuna.visualization.plot_param_importances(study)
@@ -16,6 +17,7 @@ fig = optuna.visualization.plot_optimization_history(study)
 
 #fig = optuna.visualization.plot_contour(study, params=['lr', 'hidden_dim'])
 
-fig = optuna.visualization.plot_intermediate_values(study)
+#fig = optuna.visualization.plot_intermediate_values(study)
+fig.write_html("optimization_history_history.html")
 
-fig.show()
+#fig.show()
