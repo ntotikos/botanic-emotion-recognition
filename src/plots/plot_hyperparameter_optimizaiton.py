@@ -18,6 +18,14 @@ fig = optuna.visualization.plot_optimization_history(study)
 #fig = optuna.visualization.plot_contour(study, params=['lr', 'hidden_dim'])
 
 #fig = optuna.visualization.plot_intermediate_values(study)
-fig.write_html("optimization_history_history.html")
+#fig.write_html("optimization_history_history.html")
 
 #fig.show()
+
+best_trial = study.best_trial
+
+print(f"Best Trial: {best_trial.number}")
+print(f"Value: {best_trial.value}")
+print("Parameters:")
+for key, value in best_trial.params.items():
+    print(f"    {key}: {value}")
