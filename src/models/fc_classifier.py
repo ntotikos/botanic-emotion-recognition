@@ -157,7 +157,7 @@ def objective(trial, save=False):
     return accuracy
 
 
-if __name__ == "__main__":
+def main_hp_optimization():
     search_space = {
         'lr': [0.0001, 0.001, 0.01, 0.1],
         'hidden_dim_1': [2 ** i for i in range(3, 9)],
@@ -185,3 +185,64 @@ if __name__ == "__main__":
     print("  Params: ")
     for key, value in trial_.params.items():
         print("    {}: {}".format(key, value))
+
+
+def _main(save=True):
+    set_seed(42)
+
+    # Get the TS dataset.
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
+    dataset = EkmanDataset(path_to_pickle)
+    dataset.get_data_and_labels()
+    dataset.split_dataset_into_train_val_test()
+
+    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
+
+    dataset.get_label_distribution(train_dataloader)
+
+    # Generate the model.
+    model = DenseClassifier("params")
+    model.setup_model()
+    model.setup_training()
+
+    # Hyperparameter suggestion.
+    lr = 0.1
+    hidden_dim_1 = 16
+    hidden_dim_2 = 64
+
+    model.learning_rate = lr
+    model.n_hidden_1 = hidden_dim_1
+    model.n_hidden_2 = hidden_dim_2
+
+    # Number of epochs
+    epochs = 50
+
+    # Training loop
+    for epoch in range(epochs):
+        for batch_data, batch_labels in train_dataloader:
+            # Zero gradients
+            model.optimizer.zero_grad()
+
+            # Forward pass
+            outputs = model(batch_data)  # Without implemented __call__ method: model.forward(data)
+
+            # Compute loss
+            loss = model.criterion(outputs, batch_labels)
+
+            # Backward pass and optimize
+            loss.backward()
+            model.optimizer.step()
+
+            logging.info(f"[{epoch + 1}/{epochs}]:training loss: {loss.item}")
+
+        if (epoch + 1) % 5 == 0:
+            print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+
+    if save:
+        with open(os.path.join(MODELS_DIR, 'fc_classifier_v1.pkl'), 'wb') as pkl:
+            pickle.dump(model, pkl)
+
+
+if __name__ == "__main__":
+    # main_hp_optimization()
+    _main(False)
