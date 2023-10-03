@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, random_split, TensorDataset
 import torch
 import numpy as np
 import pandas as pd
+import warnings
 
 
 class EkmanDataset:
@@ -39,12 +40,36 @@ class EkmanDataset:
         labels = torch.tensor(np.array(labels), dtype=torch.long)
         self.dataset = TensorDataset(wav_slices, labels)
 
+    def get_data_and_labels_without_neutral(self):
+        """
+        TODO: Create new class EkmanNeutral to account for the Neutral class
+        """
+        wav_slices = []
+        labels = []
+        for segment in self.raw_data:
+            if segment["label"] != "Neutral":
+                wav_slices.append(segment["wav_slice"])
+                labels.append(self.map_label_to_int(segment["label"]))
+
+        wav_slices = torch.tensor(np.array(wav_slices), dtype=torch.float32)
+        labels = torch.tensor(np.array(labels), dtype=torch.long)
+        self.dataset = TensorDataset(wav_slices, labels)
+
     def get_labels(self):
         pass
 
     def normalize_samples(self):
-        # TODO: implement normalization. Mean. Std.
-        pass
+        # TODO: Test calculation and broadcast of mean and std_dev
+        data_tensor, labels_tensor = self.dataset.tensors
+        mean = torch.mean(data_tensor, dim=1, keepdim=True)
+        std_dev = torch.std(data_tensor, dim=1, keepdim=True)
+
+        if 0 in std_dev:
+            warnings.warn("Zero value(s) in std_dev replaced with 1.")
+            std_dev[std_dev == 0] = 1
+
+        standardized_data = (data_tensor - mean) / std_dev
+        self.dataset = TensorDataset(standardized_data, labels_tensor)
 
     @staticmethod
     def map_label_to_int(emotion: str):
