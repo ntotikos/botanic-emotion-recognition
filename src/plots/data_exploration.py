@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from src.data.dataset_builder import EkmanDataset
 from src.utils.constants import DATASETS_DIR
 from src.utils.reproducibility import set_seed
+from src.utils.constants import INT_TO_EKMAN_DICT
 
 set_seed(42)
 
@@ -42,8 +43,53 @@ y = label_tensor.numpy()
 # plt.title('PCA Visualization')
 # plt.xlabel('Principal Component 1')
 # plt.ylabel('Principal Component 2')
-# plt.savefig('pca_visualization_untouched_without_neutral.png', dpi=300, bbox_inches='tight')
+# plt.savefig('pca_visualization_untouched_without_neutral_min_max.png', dpi=300, bbox_inches='tight')
 # plt.show()
+
+# pca = PCA(n_components=3)
+# X_pca = pca.fit_transform(X)
+#
+# fig = plt.figure(figsize=(10, 7))
+# ax = fig.add_subplot(111, projection='3d')
+#
+# for label in np.unique(y):
+#     indices = np.where(y == label)
+#     ax.scatter(X_pca[indices, 0], X_pca[indices, 1], X_pca[indices, 2], label=label)
+#
+# ax.set_title("3D PCA of the Data")
+# ax.set_xlabel("Principal Component 1")
+# ax.set_ylabel("Principal Component 2")
+# ax.set_zlabel("Principal Component 3")
+# ax.legend()
+# plt.show()
+
+pca = PCA(n_components=3)
+X_pca = pca.fit_transform(X)
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+num_samples_per_class = 150
+
+for label in np.unique(y):
+    indices = np.where(y == label)[0]
+    selected_indices = np.random.choice(indices, size=min(num_samples_per_class, len(indices)), replace=False)
+    ax.scatter(X_pca[selected_indices, 0], X_pca[selected_indices, 1], X_pca[selected_indices, 2],
+               label=INT_TO_EKMAN_DICT[label])
+
+ax.set_xlabel('PC1')
+ax.set_ylabel('PC2')
+ax.set_zlabel('PC3')
+ax.legend()
+plt.savefig('pca_visualization_untouched_without_neutral_min_max_100samples.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+
+
+
+
+
+
 
 
 # tsne = TSNE(n_components=2, random_state=42, verbose=1, n_iter=2000)
@@ -58,7 +104,7 @@ y = label_tensor.numpy()
 # plt.title('t-SNE Visualization')
 # plt.xlabel('Dimension 1')
 # plt.ylabel('Dimension 2')
-# plt.savefig('tsne_visualization_untouched_without_neutral.png', dpi=300, bbox_inches='tight')
+# plt.savefig('tsne_visualization_untouched_without_neutral_minmax.png', dpi=300, bbox_inches='tight')
 # plt.show()
 
 
