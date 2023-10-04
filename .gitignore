@@ -13,6 +13,10 @@ notebooks/playground.ipynb
 results/models
 results/figures
 
+src/plots/*.html
+src/plots/*.png
+src/plots/*.npy
+
 # Models
 
 # Environments
