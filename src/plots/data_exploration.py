@@ -16,7 +16,7 @@ set_seed(42)
 path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
 dataset = EkmanDataset(path_to_pickle)
 dataset.get_data_and_labels_without_neutral()
-dataset.normalize_samples()
+dataset.normalize_samples(normalization="min-max-scaling")
 
 print(len(dataset.dataset))
 
@@ -46,20 +46,20 @@ y = label_tensor.numpy()
 # plt.show()
 
 
-tsne = TSNE(n_components=2, random_state=42, verbose=1, n_iter=2000)
-X_tsne = tsne.fit_transform(X)
-
-np.save('tsne_values_2000.npy', X_tsne)
-
-plt.figure(figsize=(8, 6))
-for label in np.unique(y):
-    plt.scatter(X_tsne[y == label, 0], X_tsne[y == label, 1], label=label)
-plt.legend()
-plt.title('t-SNE Visualization')
-plt.xlabel('Dimension 1')
-plt.ylabel('Dimension 2')
-plt.savefig('tsne_visualization_untouched_without_neutral.png', dpi=300, bbox_inches='tight')
-plt.show()
+# tsne = TSNE(n_components=2, random_state=42, verbose=1, n_iter=2000)
+# X_tsne = tsne.fit_transform(X)
+#
+# np.save('tsne_values_2000.npy', X_tsne)
+#
+# plt.figure(figsize=(8, 6))
+# for label in np.unique(y):
+#     plt.scatter(X_tsne[y == label, 0], X_tsne[y == label, 1], label=label)
+# plt.legend()
+# plt.title('t-SNE Visualization')
+# plt.xlabel('Dimension 1')
+# plt.ylabel('Dimension 2')
+# plt.savefig('tsne_visualization_untouched_without_neutral.png', dpi=300, bbox_inches='tight')
+# plt.show()
 
 
 

@@ -65,7 +65,7 @@ class EkmanDataset:
             mean = torch.mean(data_tensor, dim=1, keepdim=True)
             std_dev = torch.std(data_tensor, dim=1, keepdim=True)
             standardized_data = (data_tensor - mean) / (std_dev + 1e-8)  # smoothing term to prevent zero division
-        elif normalization == "per-feature":
+        elif normalization == "per-feature":  # i.e. per column
             data_tensor, labels_tensor = self.dataset.tensors
             mean = torch.mean(data_tensor, dim=0)
             std_dev = torch.std(data_tensor, dim=0)
@@ -77,8 +77,8 @@ class EkmanDataset:
             standardized_data = (data_tensor - mean) / (std_dev + 1e-8)  # smoothing term to prevent zero division
         elif normalization == "min-max-scaling":
             data_tensor, labels_tensor = self.dataset.tensors
-            minima = torch.min(data_tensor, dim=0)
-            maxima = torch.max(data_tensor, dim=0)
+            minima, _ = torch.min(data_tensor, dim=0)
+            maxima, _ = torch.max(data_tensor, dim=0)
             standardized_data = (data_tensor - minima) / (maxima - minima + 1e-8)
 
         self.dataset = TensorDataset(standardized_data, labels_tensor)
