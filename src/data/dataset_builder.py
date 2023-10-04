@@ -58,17 +58,29 @@ class EkmanDataset:
     def get_labels(self):
         pass
 
-    def normalize_samples(self):
+    def normalize_samples(self, normalization="per-sample"):
         # TODO: Test calculation and broadcast of mean and std_dev
-        data_tensor, labels_tensor = self.dataset.tensors
-        mean = torch.mean(data_tensor, dim=1, keepdim=True)
-        std_dev = torch.std(data_tensor, dim=1, keepdim=True)
+        if normalization == "per-sample":
+            data_tensor, labels_tensor = self.dataset.tensors
+            mean = torch.mean(data_tensor, dim=1, keepdim=True)
+            std_dev = torch.std(data_tensor, dim=1, keepdim=True)
+            standardized_data = (data_tensor - mean) / (std_dev + 1e-8)  # smoothing term to prevent zero division
+        elif normalization == "per-feature":
+            data_tensor, labels_tensor = self.dataset.tensors
+            mean = torch.mean(data_tensor, dim=0)
+            std_dev = torch.std(data_tensor, dim=0)
+            standardized_data = (data_tensor - mean) / (std_dev + 1e-8)  # smoothing term to prevent zero division
+        elif normalization == "global":
+            data_tensor, labels_tensor = self.dataset.tensors
+            mean = torch.mean(data_tensor)
+            std_dev = torch.std(data_tensor)
+            standardized_data = (data_tensor - mean) / (std_dev + 1e-8)  # smoothing term to prevent zero division
+        elif normalization == "min-max-scaling":
+            data_tensor, labels_tensor = self.dataset.tensors
+            minima = torch.min(data_tensor, dim=0)
+            maxima = torch.max(data_tensor, dim=0)
+            standardized_data = (data_tensor - minima) / (maxima - minima + 1e-8)
 
-        if 0 in std_dev:
-            warnings.warn("Zero value(s) in std_dev replaced with 1.")
-            std_dev[std_dev == 0] = 1
-
-        standardized_data = (data_tensor - mean) / std_dev
         self.dataset = TensorDataset(standardized_data, labels_tensor)
 
     @staticmethod
