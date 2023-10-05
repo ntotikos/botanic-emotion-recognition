@@ -87,7 +87,7 @@ class EkmanDataset:
     def map_label_to_int(emotion: str):
         return EKMAN_NEUTRAL_TO_INT_DICT[emotion]
 
-    def split_dataset_into_train_val_test(self, train_split: float = 0.8, val_split: float = 0.1):
+    def split_dataset_into_train_val_test(self, train_split: float = 0.8, val_split: float = 0.1, stratify=False):
         # TODO: This should be an abstract method in a super class.
         # TODO 2: call this method `random_split_dataset_...` and create other `split` function that makes sure that
         # split is done in a way that one set is not getting all rare samples (that are not a lot in the dataset)
@@ -96,6 +96,12 @@ class EkmanDataset:
         test_size = len(self.dataset) - train_size - val_size
 
         self.train_data, self.val_data, self.test_data = random_split(self.dataset, [train_size, val_size, test_size])
+
+        # TODO: implement.
+        if not stratify:  # randomly split dataset
+            pass
+        elif stratify:  # stratified split, i.e. all subsets have similar class distribution
+            pass
 
     @staticmethod
     def get_label_distribution(dataloader):
