@@ -8,6 +8,12 @@ import numpy as np
 import pandas as pd
 import warnings
 
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Subset
+
+from src.utils.reproducibility import set_seed
+set_seed(42)
+
 
 class EkmanDataset:
     def __init__(self, data_path):
@@ -26,6 +32,11 @@ class EkmanDataset:
 
     def __len__(self):
         return len(self.raw_data)
+
+    def __getitem__(self, idx):
+        sample = self.dataset.tensors[0][idx]
+        label = self.dataset.tensors[1][idx]
+        return sample, label
 
     def get_data_and_labels(self):
         """
@@ -87,21 +98,37 @@ class EkmanDataset:
     def map_label_to_int(emotion: str):
         return EKMAN_NEUTRAL_TO_INT_DICT[emotion]
 
-    def split_dataset_into_train_val_test(self, train_split: float = 0.8, val_split: float = 0.1, stratify=False):
+    def split_dataset_into_train_val_test(self, train_split: float = 0.7, val_split: float = 0.15, stratify=False):
         # TODO: This should be an abstract method in a super class.
         # TODO 2: call this method `random_split_dataset_...` and create other `split` function that makes sure that
         # split is done in a way that one set is not getting all rare samples (that are not a lot in the dataset)
-        train_size = int(train_split * len(self.dataset))
-        val_size = int(val_split * len(self.dataset))
-        test_size = len(self.dataset) - train_size - val_size
 
-        self.train_data, self.val_data, self.test_data = random_split(self.dataset, [train_size, val_size, test_size])
-
-        # TODO: implement.
         if not stratify:  # randomly split dataset
-            pass
+            train_size = int(train_split * len(self.dataset))
+            val_size = int(val_split * len(self.dataset))
+            test_size = len(self.dataset) - train_size - val_size
+
+            self.train_data, self.val_data, self.test_data = random_split(self.dataset,
+                                                                          [train_size, val_size, test_size])
         elif stratify:  # stratified split, i.e. all subsets have similar class distribution
-            pass
+            y = self.dataset.tensors[1]
+            indices = list(range(len(self.dataset)))
+            train_indices, test_val_indices = train_test_split(indices, test_size=0.3, stratify=y, random_state=42)
+            test_indices, val_indices = train_test_split(test_val_indices, test_size=0.5,
+                                                         stratify=[y[i] for i in test_val_indices], random_state=42)
+
+            print(y)
+            print(indices)
+            print(len(train_indices))
+            print(len(test_indices))
+            print(len(val_indices))
+
+            self.train_data = Subset(dataset, train_indices)
+            self.test_data = Subset(dataset, test_indices)
+            self.val_data = Subset(dataset, val_indices)
+
+            print(Subset(dataset, train_indices))
+
 
     @staticmethod
     def get_label_distribution(dataloader):
@@ -130,13 +157,23 @@ if __name__ == "__main__":
     path_to_pickle = DATASETS_DIR / "sdm_2023-01-10_team_01_8333_9490.pkl"
     dataset = EkmanDataset(path_to_pickle)
     dataset.get_data_and_labels()
-    dataset.split_dataset_into_train_val_test()
+    dataset.split_dataset_into_train_val_test(stratify=True)
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
 
     output = dataset.get_label_distribution(train_dataloader)
     print("OUTPUT:", output)
 
-
-    #for i, j in train_dataloader:
-    #    print(i)
+    # for l in output:
+    #     print(f"{l}")
+    #     print(f"{l / sum(output)*100:.2f}%")
+    #
+    # output_2 = dataset.get_label_distribution(val_dataloader)
+    # for j in output_2:
+    #     print(f"{j}")
+    #     print(f"{j / sum(output_2)*100:.2f}%")
+    #
+    # output_3 = dataset.get_label_distribution(test_dataloader)
+    # for k in output_3:
+    #     print(f"{k}")
+    #     print(f"{k / sum(output_3)*100:.2f}%")
