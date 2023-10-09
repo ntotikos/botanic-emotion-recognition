@@ -2,7 +2,7 @@
 import pickle
 
 from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT, INT_TO_EKMAN_NEUTRAL_DICT
-from torch.utils.data import DataLoader, random_split, TensorDataset
+from torch.utils.data import DataLoader, random_split, TensorDataset, WeightedRandomSampler
 import torch
 import numpy as np
 import pandas as pd
@@ -117,17 +117,17 @@ class EkmanDataset:
             test_indices, val_indices = train_test_split(test_val_indices, test_size=0.5,
                                                          stratify=[y[i] for i in test_val_indices], random_state=42)
 
-            print(y)
-            print(indices)
-            print(len(train_indices))
-            print(len(test_indices))
-            print(len(val_indices))
+            #print(y)
+            #print(indices)
+            #print(len(train_indices))
+            #print(len(test_indices))
+            #print(len(val_indices))
 
             self.train_data = Subset(dataset, train_indices)
             self.test_data = Subset(dataset, test_indices)
             self.val_data = Subset(dataset, val_indices)
 
-            print(Subset(dataset, train_indices))
+            #print(Subset(dataset, train_indices))
 
 
     @staticmethod
@@ -140,9 +140,26 @@ class EkmanDataset:
         class_counts = df['Class'].value_counts()
         return class_counts
 
-    def create_data_loader(self, batch_size=32):
-        # TODO: How to handle case when there are only 29/32 samples left? Padding or doesn't matter?
-        train_loader = DataLoader(self.train_data, batch_size)
+    def create_data_loader(self, batch_size=32, upsampling="none"):
+        # Upsampling the training data.
+        if upsampling == "none":
+            # TODO: How to handle case when there are only 29/32 samples left? Padding or doesn't matter?
+            train_loader = DataLoader(self.train_data, batch_size)
+        elif upsampling == "naive":  # naive upsampling
+            # Get samples and class distribution
+            y = torch.tensor([sample[1] for sample in self.train_data])
+            n_class_samples = torch.tensor([(y == t).sum() for t in torch.unique(y, sorted=True)])
+
+            # Compute weights for weighted sampler
+            weights = 1. / n_class_samples.float()
+            samples_weights = torch.tensor([weights[t] for t in y])
+            sampler = WeightedRandomSampler(samples_weights, len(samples_weights))
+
+            # Create DataLoader for training
+            train_loader = DataLoader(self.train_data, batch_size=batch_size, sampler=sampler)
+        elif upsampling == "smote":
+            pass
+
         val_loader = DataLoader(self.val_data, batch_size)
         test_loader = DataLoader(self.test_data, batch_size)
 
@@ -154,15 +171,21 @@ def map_int_to_label(emotion: int):
 
 
 if __name__ == "__main__":
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01-10_team_01_8333_9490.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
     dataset.get_data_and_labels()
     dataset.split_dataset_into_train_val_test(stratify=True)
 
-    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
+    train_dl, _, _ = dataset.create_data_loader(upsampling="none")
+    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
 
-    output = dataset.get_label_distribution(train_dataloader)
+    output = dataset.get_label_distribution(train_dl)
+    output_2 = dataset.get_label_distribution(train_dataloader)
+
     print("OUTPUT:", output)
+    print("OUTPUT 2:", output_2)
+
+
 
     # for l in output:
     #     print(f"{l}")
