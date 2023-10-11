@@ -1,9 +1,11 @@
 """ Build custom datasets. """
+import gc  # garbage collection
 import pickle
 
 from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT, INT_TO_EKMAN_NEUTRAL_DICT
 from torch.utils.data import DataLoader, random_split, TensorDataset, WeightedRandomSampler
 import torch
+import os
 import numpy as np
 import pandas as pd
 import warnings
@@ -165,7 +167,7 @@ class EkmanDataset:
 
         return train_loader, val_loader, test_loader
 
-    def class_decomposition(self, save_path=None, balanced=False, method="ovo"):
+    def class_decomposition(self, save_path=DATASETS_DIR, method="ovo"):
         """
         Implementation of class decomposition "one-vs-ovo" and "one-vs-all" for mitigating class imbalance and
         overlapping classes. It generates binary classification datasets that are stored in the memory. In the case of
@@ -174,11 +176,29 @@ class EkmanDataset:
         Theoretically, can be applied to balanced and imbalanced datasets.
 
         :param save_path: Path to save generated binary datasets.
-        :param balanced: Create balanced binary datasets or unbalanced ones.
         :param method: Specify method ovo or ova.
         """
         unique_labels = torch.unique(torch.tensor([sample[1] for sample in self.dataset]))
-        print(unique_labels)
+
+        path = os.path.join(save_path, method+"-datasets")
+        if not os.path.exists(path):
+            os.mkdir(path)
+            print(f"Directory created: {path}")
+
+        for idx, label1 in enumerate(unique_labels):
+            for label2 in unique_labels[idx + 1:]:
+                # Generate binary dataset for all combinations.
+                binary_data = [(data, target) for data, target in self.dataset if target == label1 or target == label2]
+
+                file_name = f"binary_{map_int_to_label(label1)}{label1}_vs_{map_int_to_label(label2)}{label2}.pkl"
+                full_path = os.path.join(path, file_name)
+
+                if not os.path.exists(full_path):
+                    with open(full_path, 'wb') as f:
+                        pickle.dump(binary_data, f)
+
+                del binary_data  # delete reference to object
+                gc.collect()
 
     def remove_neutral(self):
         # TODO: implement removal of neutral class from loaded dataset.
@@ -186,7 +206,7 @@ class EkmanDataset:
 
 
 def map_int_to_label(emotion: int):
-    return INT_TO_EKMAN_NEUTRAL_DICT[emotion]
+    return INT_TO_EKMAN_NEUTRAL_DICT[int(emotion)]
 
 
 
