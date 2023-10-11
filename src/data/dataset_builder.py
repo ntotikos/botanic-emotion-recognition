@@ -38,7 +38,7 @@ class EkmanDataset:
         label = self.dataset.tensors[1][idx]
         return sample, label
 
-    def get_data_and_labels(self):
+    def load_dataset(self):
         """
         """
         wav_slices = []
@@ -165,38 +165,52 @@ class EkmanDataset:
 
         return train_loader, val_loader, test_loader
 
+    def class_decomposition(self, save_path=None, balanced=False, method="ovo"):
+        """
+        Implementation of class decomposition "one-vs-ovo" and "one-vs-all" for mitigating class imbalance and
+        overlapping classes. It generates binary classification datasets that are stored in the memory. In the case of
+        ovo with 7 classes we get 21 binary classifiers, for ova it is 7 binary classifiers.
+
+        Theoretically, can be applied to balanced and imbalanced datasets.
+
+        :param save_path: Path to save generated binary datasets.
+        :param balanced: Create balanced binary datasets or unbalanced ones.
+        :param method: Specify method ovo or ova.
+        """
+        unique_labels = torch.unique(torch.tensor([sample[1] for sample in self.dataset]))
+        print(unique_labels)
+
+    def remove_neutral(self):
+        # TODO: implement removal of neutral class from loaded dataset.
+        pass
+
 
 def map_int_to_label(emotion: int):
     return INT_TO_EKMAN_NEUTRAL_DICT[emotion]
 
 
+
+
+
 if __name__ == "__main__":
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
+
+    """
+    Plot class distribution balanced vs. imbalanced. 
+    """
+    #dataset = EkmanDataset(path_to_pickle)
+    #dataset.load_dataset()
+    #dataset.split_dataset_into_train_val_test(stratify=True)
+
+    #train_dl, _, _ = dataset.create_data_loader(upsampling="none")
+    #train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
+
+    #output = dataset.get_label_distribution(train_dl)
+    #output_2 = dataset.get_label_distribution(train_dataloader)
+
+    #print("OUTPUT:", output)
+    #print("OUTPUT 2:", output_2)
+
     dataset = EkmanDataset(path_to_pickle)
-    dataset.get_data_and_labels()
-    dataset.split_dataset_into_train_val_test(stratify=True)
-
-    train_dl, _, _ = dataset.create_data_loader(upsampling="none")
-    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
-
-    output = dataset.get_label_distribution(train_dl)
-    output_2 = dataset.get_label_distribution(train_dataloader)
-
-    print("OUTPUT:", output)
-    print("OUTPUT 2:", output_2)
-
-
-
-    # for l in output:
-    #     print(f"{l}")
-    #     print(f"{l / sum(output)*100:.2f}%")
-    #
-    # output_2 = dataset.get_label_distribution(val_dataloader)
-    # for j in output_2:
-    #     print(f"{j}")
-    #     print(f"{j / sum(output_2)*100:.2f}%")
-    #
-    # output_3 = dataset.get_label_distribution(test_dataloader)
-    # for k in output_3:
-    #     print(f"{k}")
-    #     print(f"{k / sum(output_3)*100:.2f}%")
+    dataset.load_dataset()
+    dataset.class_decomposition()

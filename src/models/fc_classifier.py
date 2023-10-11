@@ -62,7 +62,7 @@ def objective(trial, save=False):
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
-    dataset.get_data_and_labels()
+    dataset.load_dataset()
     dataset.split_dataset_into_train_val_test()
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
@@ -193,7 +193,7 @@ def _main(save=True):
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
-    dataset.get_data_and_labels()
+    dataset.load_dataset()
     dataset.split_dataset_into_train_val_test()
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
