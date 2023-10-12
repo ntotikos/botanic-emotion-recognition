@@ -1,6 +1,7 @@
 """ Build custom datasets. """
 import gc  # garbage collection
 import pickle
+import joblib, sqlite3
 
 from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT, INT_TO_EKMAN_NEUTRAL_DICT
 from torch.utils.data import DataLoader, random_split, TensorDataset, WeightedRandomSampler
@@ -188,17 +189,51 @@ class EkmanDataset:
         for idx, label1 in enumerate(unique_labels):
             for label2 in unique_labels[idx + 1:]:
                 # Generate binary dataset for all combinations.
-                binary_data = [(data, target) for data, target in self.dataset if target == label1 or target == label2]
+                binary_data = [(data.float().numpy(), int(target)) for data, target in self.dataset if target == label1
+                               or target == label2]
 
-                file_name = f"binary_{map_int_to_label(label1)}{label1}_vs_{map_int_to_label(label2)}{label2}.pkl"
+                file_name = f"binary_{map_int_to_label(label1)}_{label1}_vs_{map_int_to_label(label2)}_{label2}.pkl"
                 full_path = os.path.join(path, file_name)
 
                 if not os.path.exists(full_path):
                     with open(full_path, 'wb') as f:
                         pickle.dump(binary_data, f)
 
-                del binary_data  # delete reference to object
-                gc.collect()
+                #del binary_data  # delete reference to object
+                #gc.collect()
+
+    # def class_decomposition(self, save_path=DATASETS_DIR, method="ovo"):
+    #     """
+    #     Implementation of class decomposition "one-vs-ovo" and "one-vs-all" for mitigating class imbalance and
+    #     overlapping classes. It generates binary classification datasets that are stored in the memory. In the case of
+    #     ovo with 7 classes we get 21 binary classifiers, for ova it is 7 binary classifiers.
+    #
+    #     Theoretically, can be applied to balanced and imbalanced datasets.
+    #
+    #     :param save_path: Path to save generated binary datasets.
+    #     :param method: Specify method ovo or ova.
+    #     """
+    #     unique_labels = torch.unique(torch.tensor([sample[1] for sample in self.dataset]))
+    #
+    #     path = os.path.join(save_path, method+"-datasets")
+    #     if not os.path.exists(path):
+    #         os.mkdir(path)
+    #         print(f"Directory created: {path}")
+    #
+    #     for idx, label1 in enumerate(unique_labels):
+    #         for label2 in unique_labels[idx + 1:]:
+    #             # Generate binary dataset for all combinations.
+    #             binary_data = [(data.float().numpy(), int(target)) for data, target in self.dataset if target == label1 or target == label2]
+    #
+    #             file_name = f"binary_{map_int_to_label(label1)}{label1}_vs_{map_int_to_label(label2)}{label2}.joblib"
+    #             full_path = os.path.join(path, file_name)
+    #
+    #             if not os.path.exists(full_path):
+    #                 joblib.dump(binary_data, full_path)
+    #             print(f"#Samples: {len(binary_data)}")
+    #             print(f"#Samples: {binary_data[0:3]}")
+    #             del binary_data  # delete reference to object
+    #             gc.collect()
 
     def remove_neutral(self):
         # TODO: implement removal of neutral class from loaded dataset.
@@ -209,28 +244,28 @@ def map_int_to_label(emotion: int):
     return INT_TO_EKMAN_NEUTRAL_DICT[int(emotion)]
 
 
-
-
-
 if __name__ == "__main__":
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
 
     """
     Plot class distribution balanced vs. imbalanced. 
     """
-    #dataset = EkmanDataset(path_to_pickle)
-    #dataset.load_dataset()
-    #dataset.split_dataset_into_train_val_test(stratify=True)
-
-    #train_dl, _, _ = dataset.create_data_loader(upsampling="none")
-    #train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
-
-    #output = dataset.get_label_distribution(train_dl)
-    #output_2 = dataset.get_label_distribution(train_dataloader)
-
-    #print("OUTPUT:", output)
-    #print("OUTPUT 2:", output_2)
-
     dataset = EkmanDataset(path_to_pickle)
     dataset.load_dataset()
-    dataset.class_decomposition()
+    dataset.split_dataset_into_train_val_test(stratify=True)
+
+    train_dl, _, _ = dataset.create_data_loader(upsampling="none")
+    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
+
+    output = dataset.get_label_distribution(train_dl)
+    output_2 = dataset.get_label_distribution(train_dataloader)
+
+    print("OUTPUT:", output)
+    print("OUTPUT 2:", output_2)
+
+    """
+    Class decomposition: split multi-class dataset into 21 binary datasets.
+    """
+    #dataset = EkmanDataset(path_to_pickle)
+    #dataset.load_dataset()
+    #dataset.class_decomposition()
