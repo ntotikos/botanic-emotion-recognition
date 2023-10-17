@@ -2,10 +2,8 @@
 from src.data.dataset_builder import EkmanDataset
 from src.models.deeplearning_classifier import DLClassifier
 import torch
-import logging
 
 from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR, EKMAN_EMOTIONS_NEUTRAL
-from src.utils.reproducibility import set_seed
 
 import os
 import pickle
@@ -16,12 +14,6 @@ from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, p
 import optuna
 from optuna.trial import TrialState
 import wandb
-
-logging.basicConfig(filename=LOGS_DIR / 'training/fc_classifier_try.log',
-                    filemode='w',
-                    level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 class DenseClassifier(DLClassifier):
@@ -95,7 +87,7 @@ def objective(trial, save=False):
     )
 
     # Number of epochs
-    epochs = 50  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+    epochs = 25  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):
@@ -118,13 +110,10 @@ def objective(trial, save=False):
         all_labels = []
 
         model.model.eval()
-        correct = 0
-
         with torch.no_grad():
             for batch_data, batch_labels in val_dataloader:
                 output = model(batch_data)  # 32 x 7
                 pred = output.argmax(dim=1, keepdims=True)  # 32 x 1
-                correct += pred.eq(batch_labels.view_as(pred)).sum().item()  # assure same dimensions
 
                 predicted = output.argmax(dim=1)
                 all_preds.extend(predicted.numpy())
@@ -182,9 +171,9 @@ def main_hp_optimization():
     }
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
-    study = optuna.create_study(sampler=sampler, study_name="fc_study", storage="sqlite:///fc_hyperparam_opt_new.db",
+    study = optuna.create_study(sampler=sampler, study_name="fc_baseline", storage="sqlite:///fc_hpo_baseline.db",
                                 direction="maximize", load_if_exists=True)
-    study.optimize(objective, n_trials=2)
+    study.optimize(objective, n_trials=108)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
