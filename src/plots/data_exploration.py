@@ -11,7 +11,7 @@ from src.utils.constants import DATASETS_DIR
 from src.utils.reproducibility import set_seed
 from src.utils.constants import INT_TO_EKMAN_DICT
 
-set_seed(42)
+#set_seed(42)
 
 # Get the TS dataset.
 path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
