@@ -80,7 +80,7 @@ def objective(trial, save=False):
     name_experiment = f"{trial.number}_fc-multi-class_lr-{lr}_hd1-{hidden_dim_1}_hd2-{hidden_dim_2}_dr-{dropout_rate}"
 
     wandb.init(
-        project="wandb-optuna-test-run",
+        project="fc-baseline-multiclass-hpo",
         dir=LOGS_DIR,
         name=name_experiment,
         #  config=
@@ -121,10 +121,10 @@ def objective(trial, save=False):
 
         balanced_accuracy = balanced_accuracy_score(all_labels, all_preds)
         accuracy = accuracy_score(all_labels, all_preds)
-        f1_class = f1_score(all_labels, all_preds, average=None)
-        f1_weighted = f1_score(all_labels, all_preds, average="weighted")
-        recall = recall_score(all_labels, all_preds, average="weighted")
-        precision = precision_score(all_labels, all_preds, average="weighted")
+        f1_class = f1_score(all_labels, all_preds, average=None, zero_division=0.0)
+        f1_weighted = f1_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        recall = recall_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        precision = precision_score(all_labels, all_preds, average="weighted", zero_division=0.0)
         report = classification_report(
             all_labels,
             all_preds,
@@ -239,7 +239,7 @@ def _main(save=True):
             loss.backward()
             model.optimizer.step()
 
-            logging.info(f"[{epoch + 1}/{epochs}]:training loss: {loss.item}")
+            # logging.info(f"[{epoch + 1}/{epochs}]:training loss: {loss.item}")
 
         if (epoch + 1) % 5 == 0:
             print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
