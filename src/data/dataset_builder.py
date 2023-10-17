@@ -126,9 +126,9 @@ class EkmanDataset:
             #print(len(test_indices))
             #print(len(val_indices))
 
-            self.train_data = Subset(dataset, train_indices)
-            self.test_data = Subset(dataset, test_indices)
-            self.val_data = Subset(dataset, val_indices)
+            self.train_data = Subset(self.dataset, train_indices)
+            self.test_data = Subset(self.dataset, test_indices)
+            self.val_data = Subset(self.dataset, val_indices)
 
             #print(Subset(dataset, train_indices))
 
