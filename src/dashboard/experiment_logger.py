@@ -5,11 +5,14 @@ new project/experiment.
 
 import wandb
 import random
+from src.utils.constants import LOGS_DIR
 
 # start a new wandb run to track this script
 wandb.init(
     # set the wandb project where this run will be logged
-    project="my-awesome-project",
+    project= "wandb-test-run",
+    dir=LOGS_DIR,
+    name="test-run-custom-name",
 
     # track hyperparameters and run metadata
     config={
