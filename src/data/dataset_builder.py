@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import Subset
 
 from src.utils.reproducibility import set_seed
-set_seed(42)
+#set_seed(42)
 
 
 class EkmanDataset:
