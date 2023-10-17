@@ -8,9 +8,10 @@ from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR
 from src.utils.reproducibility import set_seed
 
 import os
-import pickle #TODO: Instead of pickle maybe use ...lib
+import pickle
 
-from sklearn.metrics import f1_score, accuracy_score
+from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, precision_score, recall_score, \
+    classification_report
 
 import optuna
 from optuna.trial import TrialState
@@ -75,20 +76,26 @@ def objective(trial, save=False):
     model.setup_training()
 
     # Hyperparameter suggestion.
-    lr = trial.suggest_categorical('lr', [0.0001, 0.001, 0.01, 0.1])
-    hidden_dim_1 = trial.suggest_categorical('hidden_dim_1', [2 ** i for i in range(3, 9)])
-    hidden_dim_2 = trial.suggest_categorical('hidden_dim_2', [2 ** i for i in range(3, 8)])
+    lr = trial.suggest_categorical('lr', [0.0001, 0.001, 0.01])
+    hidden_dim_1 = trial.suggest_categorical('hidden_dim_1', [2 ** i for i in range(4, 8)])
+    hidden_dim_2 = trial.suggest_categorical('hidden_dim_2', [2 ** i for i in range(4, 7)])
+    dropout_rate = trial.suggest_categorical('dropout_rate', [0, 0.1, 0.2])
 
     model.learning_rate = lr
     model.n_hidden_1 = hidden_dim_1
     model.n_hidden_2 = hidden_dim_2
+    model.dropout_rate = dropout_rate
 
     print(model.learning_rate)
     print(model.n_hidden_1)
     print(model.n_hidden_2)
+    print(model.dropout_rate)
 
     # Number of epochs
     epochs = 20  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+
+    # TODO: use validation metrics for HP optimization.
+    # TODO: combine Optuna with Weights & Biases.
 
     # Training loop
     for epoch in range(epochs):
@@ -113,6 +120,9 @@ def objective(trial, save=False):
         all_labels = []
         f1_class_values = []
         f1_weighted_values = []
+        precision_values = []
+        recall_values = []
+        accuracy_values = []
 
         model.model.eval()
         correct = 0
@@ -126,19 +136,34 @@ def objective(trial, save=False):
                 all_preds.extend(predicted.numpy())
                 all_labels.extend(batch_labels.numpy())
 
+        balanced_accuracy = balanced_accuracy_score(all_labels, all_preds)
         accuracy = accuracy_score(all_labels, all_preds)
         f1_class = f1_score(all_labels, all_preds, average=None)
         f1_weighted = f1_score(all_labels, all_preds, average="weighted")
+        recall = recall_score(all_labels, all_preds, average="weighted")
+        precision = precision_score(all_labels, all_preds, average="weighted")
+        #report = classification_report(
+        #    all_labels,
+        #    all_preds,
+        #    target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
 
         f1_class_values.append(f1_class.tolist())  # convert to list because of conversion to db object
         f1_weighted_values.append(f1_weighted)
+        accuracy_values.append(accuracy)
+        precision_values.append(precision)
+        recall_values.append(recall)
 
-        #print(f"Accuracy: {accuracy}")
-        #print(f"F1 class: {f1_class}")
-        #print(f"F1 weighted: {f1_weighted}")
+        print(f"Balanced accuracy: {balanced_accuracy}")
+        print(f"Accuracy: {accuracy}")
+        print(f"F1 class: {f1_class}")
+        print(f"F1 weighted: {f1_weighted}")
+        print(f"Precision: {precision}")
+        print(f"Recall: {recall}")
 
         # Log additional metrics
         trial.report(accuracy, epoch)
+        trial.report(balanced_accuracy, epoch)
+        trial.report(recall, epoch)
 
         # Handle pruning based on the intermediate value.
         if trial.should_prune():
@@ -149,25 +174,29 @@ def objective(trial, save=False):
     # Log additional eval metrics
     trial.set_user_attr("f1_class", f1_class_values)
     trial.set_user_attr("f1_weighted", f1_weighted_values)
+    trial.set_user_attr("accuracy", accuracy_values)
+    trial.set_user_attr("precision", precision_values)
+    trial.set_user_attr("recall", recall_values)
 
     if save:
         with open(os.path.join(MODELS_DIR, 'fc_classifier_v1.pkl'), 'wb') as pkl:
             pickle.dump(model, pkl)
 
-    return accuracy
+    return balanced_accuracy
 
 
 def main_hp_optimization():
     search_space = {
-        'lr': [0.0001, 0.001, 0.01, 0.1],
-        'hidden_dim_1': [2 ** i for i in range(3, 9)],
-        'hidden_dim_2': [2 ** i for i in range(3, 7)]
+        'lr': [0.0001, 0.001, 0.01],
+        'hidden_dim_1': [2 ** i for i in range(4, 8)],
+        'hidden_dim_2': [2 ** i for i in range(4, 7)],
+        "dropout_rate": [0, 0.1, 0.2]
     }
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
-    study = optuna.create_study(sampler=sampler, study_name="fc_study", storage="sqlite:///fc_hyperparam_opt.db",
+    study = optuna.create_study(sampler=sampler, study_name="fc_study", storage="sqlite:///fc_hyperparam_opt_new.db",
                                 direction="maximize", load_if_exists=True)
-    study.optimize(objective, n_trials=96)
+    study.optimize(objective, n_trials=2)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
@@ -244,5 +273,5 @@ def _main(save=True):
 
 
 if __name__ == "__main__":
-    # main_hp_optimization()
-    _main(False)
+    main_hp_optimization()
+    #_main(False)

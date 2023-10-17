@@ -9,7 +9,7 @@ study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hyperparam_opt_96_tri
 study = optuna.load_study(study_name="fc_study", storage=study_label)
 
 #print(study.trials)
-fig = optuna.visualization.plot_optimization_history(study)
+#fig = optuna.visualization.plot_optimization_history(study)
 
 #fig = optuna.visualization.plot_param_importances(study)
 
@@ -21,6 +21,11 @@ fig = optuna.visualization.plot_optimization_history(study)
 #fig.write_html("optimization_history_history.html")
 
 #fig.show()
+
+#f1_scores = [trial.user_attrs["f1_class"] for trial in study.trials]
+#print(f1_scores)
+for trial in study.trials[:10]:  # Just inspecting the first 10 trials
+    print(trial.user_attrs)
 
 best_trial = study.best_trial
 
