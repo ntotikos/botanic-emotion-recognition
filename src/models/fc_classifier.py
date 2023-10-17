@@ -4,7 +4,7 @@ from src.models.deeplearning_classifier import DLClassifier
 import torch
 import logging
 
-from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR
+from src.utils.constants import DATASETS_DIR, MODELS_DIR, LOGS_DIR, EKMAN_EMOTIONS_NEUTRAL
 from src.utils.reproducibility import set_seed
 
 import os
@@ -15,6 +15,7 @@ from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, p
 
 import optuna
 from optuna.trial import TrialState
+import wandb
 
 logging.basicConfig(filename=LOGS_DIR / 'training/fc_classifier_try.log',
                     filemode='w',
@@ -58,15 +59,13 @@ class DenseClassifier(DLClassifier):
 
 
 def objective(trial, save=False):
-    set_seed(42)
-
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
     dataset.load_dataset()
-    dataset.split_dataset_into_train_val_test()
+    dataset.split_dataset_into_train_val_test(stratify=True)
 
-    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
+    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="none")
 
     dataset.get_label_distribution(train_dataloader)
 
@@ -75,7 +74,7 @@ def objective(trial, save=False):
     model.setup_model()
     model.setup_training()
 
-    # Hyperparameter suggestion.
+    # HP search space.
     lr = trial.suggest_categorical('lr', [0.0001, 0.001, 0.01])
     hidden_dim_1 = trial.suggest_categorical('hidden_dim_1', [2 ** i for i in range(4, 8)])
     hidden_dim_2 = trial.suggest_categorical('hidden_dim_2', [2 ** i for i in range(4, 7)])
@@ -86,16 +85,17 @@ def objective(trial, save=False):
     model.n_hidden_2 = hidden_dim_2
     model.dropout_rate = dropout_rate
 
-    print(model.learning_rate)
-    print(model.n_hidden_1)
-    print(model.n_hidden_2)
-    print(model.dropout_rate)
+    name_experiment = f"{trial.number}_fc-multi-class_lr-{lr}_hd1-{hidden_dim_1}_hd2-{hidden_dim_2}_dr-{dropout_rate}"
+
+    wandb.init(
+        project="wandb-optuna-test-run",
+        dir=LOGS_DIR,
+        name=name_experiment,
+        #  config=
+    )
 
     # Number of epochs
-    epochs = 20  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
-
-    # TODO: use validation metrics for HP optimization.
-    # TODO: combine Optuna with Weights & Biases.
+    epochs = 50  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):
@@ -114,18 +114,12 @@ def objective(trial, save=False):
             loss.backward()
             model.optimizer.step()
 
-            #logging.info(f"Epoch [{epoch + 1}/{epochs}]: training loss: {loss.item():.4f}")
-
         all_preds = []
         all_labels = []
-        f1_class_values = []
-        f1_weighted_values = []
-        precision_values = []
-        recall_values = []
-        accuracy_values = []
 
         model.model.eval()
         correct = 0
+
         with torch.no_grad():
             for batch_data, batch_labels in val_dataloader:
                 output = model(batch_data)  # 32 x 7
@@ -142,45 +136,39 @@ def objective(trial, save=False):
         f1_weighted = f1_score(all_labels, all_preds, average="weighted")
         recall = recall_score(all_labels, all_preds, average="weighted")
         precision = precision_score(all_labels, all_preds, average="weighted")
-        #report = classification_report(
-        #    all_labels,
-        #    all_preds,
-        #    target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
+        report = classification_report(
+            all_labels,
+            all_preds,
+            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
 
-        f1_class_values.append(f1_class.tolist())  # convert to list because of conversion to db object
-        f1_weighted_values.append(f1_weighted)
-        accuracy_values.append(accuracy)
-        precision_values.append(precision)
-        recall_values.append(recall)
-
-        print(f"Balanced accuracy: {balanced_accuracy}")
-        print(f"Accuracy: {accuracy}")
-        print(f"F1 class: {f1_class}")
-        print(f"F1 weighted: {f1_weighted}")
-        print(f"Precision: {precision}")
-        print(f"Recall: {recall}")
-
-        # Log additional metrics
-        trial.report(accuracy, epoch)
         trial.report(balanced_accuracy, epoch)
-        trial.report(recall, epoch)
 
-        # Handle pruning based on the intermediate value.
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
 
-        #print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+        trial.set_user_attr("f1_class", f1_class.tolist())
+        trial.set_user_attr("f1_weighted", f1_weighted)
+        trial.set_user_attr("accuracy", accuracy)
+        trial.set_user_attr("precision", precision)
+        trial.set_user_attr("recall", recall)
+        trial.set_user_attr("classification_report", report)
 
-    # Log additional eval metrics
-    trial.set_user_attr("f1_class", f1_class_values)
-    trial.set_user_attr("f1_weighted", f1_weighted_values)
-    trial.set_user_attr("accuracy", accuracy_values)
-    trial.set_user_attr("precision", precision_values)
-    trial.set_user_attr("recall", recall_values)
+        f1_per_class_dict = {}
+        for idx, class_name in enumerate(EKMAN_EMOTIONS_NEUTRAL):
+            f1_per_class_dict[f"f1_{class_name.lower()}"] = f1_class[idx]
 
-    if save:
-        with open(os.path.join(MODELS_DIR, 'fc_classifier_v1.pkl'), 'wb') as pkl:
-            pickle.dump(model, pkl)
+        metrics = {
+            "balanced_accuracy": balanced_accuracy,
+            "accuracy": accuracy,
+            "f1_weighted": f1_weighted,
+            "recall": recall,
+            "precision": precision,
+        }
+
+        wandb.log(metrics)
+        wandb.log(f1_per_class_dict)
+
+    wandb.finish()
 
     return balanced_accuracy
 
@@ -217,7 +205,7 @@ def main_hp_optimization():
 
 
 def _main(save=True):
-    set_seed(42)
+    #set_seed(42)
 
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
@@ -225,7 +213,7 @@ def _main(save=True):
     dataset.load_dataset()
     dataset.split_dataset_into_train_val_test()
 
-    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader()
+    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="none")
 
     dataset.get_label_distribution(train_dataloader)
 
