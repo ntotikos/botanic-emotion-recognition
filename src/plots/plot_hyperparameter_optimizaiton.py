@@ -5,7 +5,7 @@ from src.utils.constants import FIGURES_DIR
 import os
 
 
-study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hyperparam_opt_new.db")
+study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hyperparam_opt_new_test.db")
 study = optuna.load_study(study_name="fc_study", storage=study_label)
 
 #print(study.trials)
@@ -25,7 +25,7 @@ study = optuna.load_study(study_name="fc_study", storage=study_label)
 #f1_scores = [trial.user_attrs["f1_class"] for trial in study.trials]
 #print(f1_scores)
 for trial in study.trials[:10]:  # Just inspecting the first 10 trials
-    print(trial.user_attrs)
+    print(trial.user_attrs["classification_report"])
 
 best_trial = study.best_trial
 

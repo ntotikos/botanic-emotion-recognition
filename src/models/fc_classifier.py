@@ -9,7 +9,7 @@ import os
 import pickle
 
 from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, precision_score, recall_score, \
-    classification_report
+    classification_report, roc_auc_score
 
 import optuna
 from optuna.trial import TrialState
@@ -78,12 +78,26 @@ def objective(trial, save=False):
     model.dropout_rate = dropout_rate
 
     name_experiment = f"{trial.number}_fc-multi-class_lr-{lr}_hd1-{hidden_dim_1}_hd2-{hidden_dim_2}_dr-{dropout_rate}"
+    experiment_notes = """
+    This experiment uses a multi-class FC model for hyperparameter optimization. 
+    The dataset has imbalances among the classes. 
+    Precision, recall, and F1 metrics are computed with zero_division set to 0.0 to handle potential edge cases.
+    Optuna is used for hyperparameter optimization.
+    """
+
+    config_dict = {
+        "lr": lr,
+        "hidden_dim_1": hidden_dim_1,
+        "hidden_dim_2": hidden_dim_2,
+        "dropout_rate": dropout_rate
+    }
 
     wandb.init(
         project="fc-baseline-multiclass-hpo",
         dir=LOGS_DIR,
         name=name_experiment,
-        #  config=
+        notes=experiment_notes,
+        config=config_dict
     )
 
     # Number of epochs
@@ -119,12 +133,14 @@ def objective(trial, save=False):
                 all_preds.extend(predicted.numpy())
                 all_labels.extend(batch_labels.numpy())
 
+        # TODO: explicitely state in written thesis that zero_division=0.0
         balanced_accuracy = balanced_accuracy_score(all_labels, all_preds)
         accuracy = accuracy_score(all_labels, all_preds)
         f1_class = f1_score(all_labels, all_preds, average=None, zero_division=0.0)
         f1_weighted = f1_score(all_labels, all_preds, average="weighted", zero_division=0.0)
         recall = recall_score(all_labels, all_preds, average="weighted", zero_division=0.0)
         precision = precision_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        auc = roc_auc_score(all_labels, all_preds, multi_class='ovr')  # TODO: document this.
         report = classification_report(
             all_labels,
             all_preds,
@@ -140,6 +156,7 @@ def objective(trial, save=False):
         trial.set_user_attr("accuracy", accuracy)
         trial.set_user_attr("precision", precision)
         trial.set_user_attr("recall", recall)
+        trial.set_user_attr("roc_auc", auc)
         trial.set_user_attr("classification_report", report)
 
         f1_per_class_dict = {}
@@ -152,6 +169,7 @@ def objective(trial, save=False):
             "f1_weighted": f1_weighted,
             "recall": recall,
             "precision": precision,
+            "roc_auc": auc
         }
 
         wandb.log(metrics)
