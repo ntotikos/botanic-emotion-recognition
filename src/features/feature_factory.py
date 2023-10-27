@@ -14,30 +14,34 @@ from src.data.data_segmentation import read_plant_file
 
 
 class FeatureExtractor:
-    pass
+    def extract(self, wav_slice):
+        raise NotImplementedError("Method needs to be implemented in subclass.")
 
 
 class PassthroughFeatures(FeatureExtractor):
     """
-    No operation.
+    No manipulation.
     """
-    pass
+    def extract(self, wav_slice):
+        return wav_slice
 
 
 class SpectralFeatures(FeatureExtractor):
-    pass
+    def extract(self, wav_slice):
+        return 1
 
 
 class TemporalFeatures(FeatureExtractor):
-    pass
+    def extract(self, wav_slice):
+        return 0
 
 
 class StatisticalFeatures(FeatureExtractor):
-    pass
+    def extract(self, wav_slice):
+        return -1
 
 
 class FeatureFactory:
-
     @staticmethod
     def get_extractor(feature_type: str) -> FeatureExtractor:
         if feature_type == "passthrough":

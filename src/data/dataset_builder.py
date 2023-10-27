@@ -3,6 +3,7 @@ import gc  # garbage collection
 import pickle
 import joblib, sqlite3
 
+from src.features.feature_factory import FeatureFactory
 from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT, INT_TO_EKMAN_NEUTRAL_DICT
 from torch.utils.data import DataLoader, random_split, TensorDataset, WeightedRandomSampler
 import torch
@@ -19,7 +20,7 @@ from src.utils.reproducibility import set_seed
 
 
 class EkmanDataset:
-    def __init__(self, data_path):
+    def __init__(self, data_path, feature_type="passthrough"):
         """
         :param data_path: Path to pickle file with data point dictionaries.
         """
@@ -27,12 +28,16 @@ class EkmanDataset:
             raw_data = pickle.load(file)
 
         self.raw_data = raw_data
+        self.feature_extractor = FeatureFactory.get_extractor(feature_type)
+
         self.dataset = None
+        self.features_dataset = None
+
         self.train_data = None
         self.val_data = None
         self.test_data = None
-        self.batch_size = 32
 
+        self.batch_size = 32
 
     def __len__(self):
         return len(self.raw_data)
@@ -54,6 +59,7 @@ class EkmanDataset:
         wav_slices = torch.tensor(np.array(wav_slices), dtype=torch.float32)
         labels = torch.tensor(np.array(labels), dtype=torch.long)
         self.dataset = TensorDataset(wav_slices, labels)
+        print("Ciaoooooooo", self.dataset[0])
 
     def get_data_and_labels_without_neutral(self):
         """
@@ -240,6 +246,24 @@ class EkmanDataset:
         # TODO: implement removal of neutral class from loaded dataset.
         pass
 
+    def extract_features(self):
+        """
+        Make sure to normalize the time series before computing the MFCC features.
+        """
+        features = []
+        labels = []
+
+        for wav_slice, label in self.dataset:
+            sample_features = self.feature_extractor.extract(wav_slice)
+            features.append(sample_features)  # sample_features should be torch.Tensor torch.float32!
+            labels.append(label)
+
+        features_tensor = torch.tensor(np.array(features), dtype=torch.float32)
+        labels_tensor = torch.tensor(np.array(labels), dtype=torch.long)
+        self.dataset = TensorDataset(features_tensor, labels_tensor)
+
+        print("Hiiiiiiiiiiiiiiii", self.dataset[0])
+
 
 def map_int_to_label(emotion: int):
     return INT_TO_EKMAN_NEUTRAL_DICT[int(emotion)]
@@ -253,6 +277,9 @@ if __name__ == "__main__":
     """
     dataset = EkmanDataset(path_to_pickle)
     dataset.load_dataset()
+    #dataset.normalize_samples()
+    dataset.extract_features()
+
     dataset.split_dataset_into_train_val_test(stratify=True)
 
     train_dl, _, _ = dataset.create_data_loader(upsampling="none")
