@@ -31,7 +31,8 @@ class EkmanDataset:
         self.train_data = None
         self.val_data = None
         self.test_data = None
-        self.batch_size = 0
+        self.batch_size = 32
+
 
     def __len__(self):
         return len(self.raw_data)

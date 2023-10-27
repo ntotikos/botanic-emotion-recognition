@@ -127,7 +127,7 @@ def objective(trial, save=False):
         with torch.no_grad():
             for batch_data, batch_labels in val_dataloader:
                 output = model(batch_data)  # 32 x 7
-                pred = output.argmax(dim=1, keepdims=True)  # 32 x 1
+                #pred = output.argmax(dim=1, keepdims=True)  # 32 x 1
 
                 predicted = output.argmax(dim=1)
                 all_preds.extend(predicted.numpy())
@@ -140,7 +140,7 @@ def objective(trial, save=False):
         f1_weighted = f1_score(all_labels, all_preds, average="weighted", zero_division=0.0)
         recall = recall_score(all_labels, all_preds, average="weighted", zero_division=0.0)
         precision = precision_score(all_labels, all_preds, average="weighted", zero_division=0.0)
-        auc = roc_auc_score(all_labels, all_preds, multi_class='ovr')  # TODO: document this.
+        #auc = roc_auc_score(all_labels, all_preds, multi_class='ovr')  # TODO: document this.
         report = classification_report(
             all_labels,
             all_preds,
@@ -156,7 +156,7 @@ def objective(trial, save=False):
         trial.set_user_attr("accuracy", accuracy)
         trial.set_user_attr("precision", precision)
         trial.set_user_attr("recall", recall)
-        trial.set_user_attr("roc_auc", auc)
+        #trial.set_user_attr("roc_auc", auc)
         trial.set_user_attr("classification_report", report)
 
         f1_per_class_dict = {}
@@ -168,12 +168,12 @@ def objective(trial, save=False):
             "accuracy": accuracy,
             "f1_weighted": f1_weighted,
             "recall": recall,
-            "precision": precision,
-            "roc_auc": auc
+            "precision": precision
+            #"roc_auc": auc
         }
 
-        wandb.log(metrics)
-        wandb.log(f1_per_class_dict)
+        wandb_input = metrics | f1_per_class_dict
+        wandb.log(wandb_input)
 
     wandb.finish()
 
@@ -239,7 +239,7 @@ def _main(save=True):
     model.n_hidden_2 = hidden_dim_2
 
     # Number of epochs
-    epochs = 50
+    #epochs = 50
 
     # Training loop
     for epoch in range(epochs):

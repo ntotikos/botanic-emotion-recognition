@@ -5,8 +5,10 @@ from src.utils.constants import FIGURES_DIR
 import os
 
 
-study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hyperparam_opt_new_test.db")
-study = optuna.load_study(study_name="fc_study", storage=study_label)
+study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hpo_baseline_108_trials.db")
+#study = optuna.load_study(study_name="fc_study", storage=study_label)
+study = optuna.load_study(study_name="fc_baseline", storage=study_label)
+
 
 #print(study.trials)
 #fig = optuna.visualization.plot_optimization_history(study)
@@ -24,8 +26,8 @@ study = optuna.load_study(study_name="fc_study", storage=study_label)
 
 #f1_scores = [trial.user_attrs["f1_class"] for trial in study.trials]
 #print(f1_scores)
-for trial in study.trials[:10]:  # Just inspecting the first 10 trials
-    print(trial.user_attrs["classification_report"])
+#for trial in study.trials[:10]:  # Just inspecting the first 10 trials
+#    print(trial.user_attrs["classification_report"])
 
 best_trial = study.best_trial
 
@@ -34,3 +36,17 @@ print(f"Value: {best_trial.value}")
 print("Parameters:")
 for key, value in best_trial.params.items():
     print(f"    {key}: {value}")
+
+
+trials = study.trials
+
+for trial in trials:
+    print(f"Trial {trial.number}: Balanced Accuracy = {trial.value}")
+
+print(f"Total number of trials: {len(trials)}")
+
+stopped_trials = [trial for trial in trials if trial.state in [optuna.trial.TrialState.PRUNED, optuna.trial.TrialState.FAIL]]
+
+# Print information about stopped trials
+for trial in stopped_trials:
+    print(f"Trial {trial.number}: State = {trial.state}")
