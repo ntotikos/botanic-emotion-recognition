@@ -2,6 +2,8 @@
 This module is a feature extraction factory for the purpose to cover different feature sets and feature extraction
 methods. For this project, spectral, temporal, and statistical features are of interest.
 """
+from src.data.data_segmentation import read_plant_file
+from python_speech_features import mfcc
 
 """
 1. For MFCC features: Read one entire teamwork session plant file, i.e. not the 1s slices, because of sliding window. 
@@ -10,7 +12,6 @@ methods. For this project, spectral, temporal, and statistical features are of i
 Wavelet
 PCA
 """
-from src.data.data_segmentation import read_plant_file
 
 
 class FeatureExtractor:
@@ -28,7 +29,9 @@ class PassthroughFeatures(FeatureExtractor):
 
 class SpectralFeatures(FeatureExtractor):
     def extract(self, wav_slice):
-        return 1
+        mfcc_features = mfcc(wav_slice, samplerate=10000, winlen=0.025, winstep=0.010, numcep=13)
+        #print(mfcc_features)
+        return mfcc_features
 
 
 class TemporalFeatures(FeatureExtractor):

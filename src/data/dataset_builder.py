@@ -2,6 +2,7 @@
 import gc  # garbage collection
 import pickle
 import joblib, sqlite3
+from matplotlib import pyplot as plt
 
 from src.features.feature_factory import FeatureFactory
 from src.utils.constants import DATASETS_DIR, EKMAN_NEUTRAL_TO_INT_DICT, INT_TO_EKMAN_NEUTRAL_DICT
@@ -11,6 +12,7 @@ import os
 import numpy as np
 import pandas as pd
 import warnings
+from tqdm import tqdm
 
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Subset
@@ -253,7 +255,7 @@ class EkmanDataset:
         features = []
         labels = []
 
-        for wav_slice, label in self.dataset:
+        for wav_slice, label in tqdm(self.dataset):
             sample_features = self.feature_extractor.extract(wav_slice)
             features.append(sample_features)  # sample_features should be torch.Tensor torch.float32!
             labels.append(label)
@@ -262,7 +264,13 @@ class EkmanDataset:
         labels_tensor = torch.tensor(np.array(labels), dtype=torch.long)
         self.dataset = TensorDataset(features_tensor, labels_tensor)
 
-        print("Hiiiiiiiiiiiiiiii", self.dataset[0])
+        print("Hiiiiiiiiiiiiiiii", self.dataset[0][0])
+        print("Size", self.dataset[0][0].size())
+
+        plt.imshow(self.dataset[0][0], cmap='viridis', aspect='auto')
+        plt.colorbar()
+        plt.show()
+
 
 
 def map_int_to_label(emotion: int):
@@ -275,9 +283,9 @@ if __name__ == "__main__":
     """
     Plot class distribution balanced vs. imbalanced. 
     """
-    dataset = EkmanDataset(path_to_pickle)
+    dataset = EkmanDataset(path_to_pickle, feature_type="spectral")
     dataset.load_dataset()
-    #dataset.normalize_samples()
+    dataset.normalize_samples()
     dataset.extract_features()
 
     dataset.split_dataset_into_train_val_test(stratify=True)
