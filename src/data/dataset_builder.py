@@ -272,7 +272,6 @@ class EkmanDataset:
         plt.show()
 
 
-
 def map_int_to_label(emotion: int):
     return INT_TO_EKMAN_NEUTRAL_DICT[int(emotion)]
 
