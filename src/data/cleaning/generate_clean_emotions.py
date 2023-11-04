@@ -12,7 +12,7 @@ from src.utils.constants import (EKMAN_EMOTIONS_NEUTRAL, EMOTIONS_DIR, TEAM_NAME
 import logging
 from scipy.io import wavfile
 
-logging.basicConfig(filename=LOGS_DIR / 'data-cleaning/generate_clean_emotions_all.log',
+logging.basicConfig(filename=LOGS_DIR / 'data-cleaning/generate_clean_emotions_all_iter2.log',
                     filemode='w',  # when creating new file change this to "a" for append
                     level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s %(message)s',
@@ -75,14 +75,6 @@ def get_dominant_emotion(
                          f"Got \"{emotion_as}\".")
 
 
-# TODO: implement functionality to cover the case "fusion of 7 binary classifiers"
-def placeholder_for_get_binary_fusion_classification_labels():
-    """
-    After the majority vote on the collective emotion, get a representation of this derived label depending on
-    the chosen type of classification: "7-class" or "binary-fusion".
-    """
-
-
 def extract_labels(clip_file):
     """
     Extract emotion labels from .csv file for one teamwork session of a team on a particular day.
@@ -139,24 +131,29 @@ def _main(save_file=False):
                 # because it takes more than one argument.
                 clip_files = sorted(clip_files, key=lambda x: custom_sort(x, mode="emotions"))
                 logging.info(f"Sorted clip_files of {t} on day {d}: {clip_files}")
+                #print(f"Sorted clip_files of {t} on day {d}: {clip_files}")
 
                 # 2. Files with interim plant teamwork signal data
                 interim_data_files = os.listdir(interim_data_path)
                 interim_data_files = sorted(interim_data_files, key=custom_sort)
                 logging.info(f"Sorted interim_data_files of {t} on day {d}: {interim_data_files}")
+                #print(f"Sorted interim_data_files of {t} on day {d}: {interim_data_files}")
 
                 for i in range(len(clip_files)):
                     equal_durations = compare_indicated_tw_duration(interim_data_files[i], clip_files[i])
                     logging.info(f"Equal teamwork duration for clip_file and interim_data_file: {equal_durations}")
+                    #print(f"Equal teamwork duration for clip_file and interim_data_file: {equal_durations}")
 
                     csv_path = os.path.join(emotions_path, clip_files[i])
                     df_emotions = extract_labels(csv_path)
                     logging.info(f"Length of df_emotions: {len(df_emotions)/5.0}")
+                    #print(f"Length of df_emotions: {len(df_emotions)/5.0}")
 
                     plant_signal_path = os.path.join(interim_data_path, interim_data_files[i])
                     _, plant_signal = wavfile.read(plant_signal_path)
 
                     logging.info(f"Length of interim_data_files[i] 1s slices: {len(plant_signal)/10000}")
+                    #print(f"Length of interim_data_files[i] 1s slices: {len(plant_signal)/10000}")
 
                     deviating_clip_length_and_label.loc[len(deviating_clip_length_and_label)] = \
                         [os.path.join(t, d, clip_files[i]), len(df_emotions), len(df_emotions)/5,
@@ -182,7 +179,7 @@ def _main(save_file=False):
 
                 print("1 Day done!")
     if not os.path.isfile(os.path.join(LOGS_DIR / "data-cleaning",
-                                       "length_comparison_clip_and_its_label.xlsx")):
+                                       "length_comparison_clip_and_its_label_iter2.xlsx")):
         deviating_clip_length_and_label.to_excel(os.path.join(LOGS_DIR / "data-cleaning",
                                                               "length_comparison_clip_and_its_label.xlsx"))
 
