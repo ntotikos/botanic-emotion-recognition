@@ -11,7 +11,7 @@ import logging
 
 from src.utils.constants import CLEANED_DATA_DIR, LABELS_DIR, DATASETS_DIR, TEAM_NAMES_CLEANED, LOGS_DIR
 
-logging.basicConfig(filename=LOGS_DIR / 'data-cleaning/data_segmentation_all_mismatches_DEBUG.log',
+logging.basicConfig(filename=LOGS_DIR / 'data-cleaning/data_segmentation_all_mismatches_DEBUG_iter2.log',
                     filemode='w',
                     level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s %(message)s',
@@ -41,6 +41,12 @@ def slice_plant_signal(plant_signal: List[float], sampling_rate: int = 10000) ->
     slices = []
     for i in range(0, len(plant_signal), sampling_rate):
         signal_slice = plant_signal[i:i+sampling_rate]
+        #print("len(signal_slice)", len(signal_slice))
+
+        if len(signal_slice) != 10000:
+            print("------------------------------------------- Trimmed TS.")
+            continue
+
         slices.append(signal_slice)
 
     slices = np.array(slices)
@@ -57,6 +63,7 @@ def read_cleaned_emotions(emotions_path: str):
     df_emotions = pd.read_csv(emotions_path)
 
     df_emotions_light = df_emotions[::5]  # take every fifth element of the emotions dataframe. TO BE UPDATED.
+
     return df_emotions_light
 
 
@@ -80,7 +87,7 @@ def save_datapoints(datapoints):
     # TODO: it might be worthwhile to store the files into database in the future in case of frequent query.
 
     # save_file_path = DATASETS_DIR / 'sdm_2023-01-10_team_01_8333_9490.pkl'
-    save_file_path = DATASETS_DIR / 'sdm_2023-01_all_valid_files_version_1.pkl'
+    save_file_path = DATASETS_DIR / 'sdm_2023-01_all_valid_files_version_iter2.pkl'
 
     if not os.path.isfile(save_file_path):
         with open(save_file_path, 'wb') as file:
@@ -161,10 +168,12 @@ def _main():
 
     datafiles_dir = get_all_filenames_in_dir(CLEANED_DATA_DIR)
     labelfiles_dir = get_all_filenames_in_dir(LABELS_DIR)
+    total_samples = 0
     count = 0
     data_points_all = []
     for team in TEAM_NAMES_CLEANED:
         for idx in range(len(labelfiles_dir[team])):
+            print(datafiles_dir[team][idx])
             samplingrate, signal = read_plant_file(datafiles_dir[team][idx])
             signal_slices = slice_plant_signal(signal, samplingrate)
             emotions = read_cleaned_emotions(labelfiles_dir[team][idx])
@@ -174,6 +183,10 @@ def _main():
             interval_emotion_file = labelfiles_dir[team][idx].split(".")[0].split("_")[-4:]
             #print("duration from label: ", int(interval_emotion_file[-1])-int(interval_emotion_file[-2]))
 
+            total_samples =  total_samples + len(signal_slices)
+
+            logging.info(f"len(emotions): {len(emotions)}")
+            logging.info(f"len(signal_slices): {len(signal_slices)}")
             if int(interval_emotion_file[-1])-int(interval_emotion_file[-2]) == len(emotions):
                 #    print(check_durations(datafiles_dir[team][idx], labelfiles_dir[team][idx]))
                 #if len(signal_slices) != len(emotions):
@@ -191,13 +204,16 @@ def _main():
             #    print(f"Information about the teamwork session duration do not match. ")
     # SAVE DATA
     logging.info(f"count:{count}")
+    logging.info(f"Number of total_samples: {total_samples}")
 
     data_points_all = flatten_list_of_lists(data_points_all)
     print(len(data_points_all))
+    print(total_samples)
+
 
 
     # Data points for one file! TODO: use for loop to iterate over all files!
-    #(data_points_all)
+    #save_datapoints(data_points_all)
 
 
 if __name__ == "__main__":

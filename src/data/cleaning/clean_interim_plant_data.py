@@ -10,7 +10,7 @@ import os
 import logging
 import shutil
 
-logging.basicConfig(filename=LOGS_DIR / 'data-cleaning/copy_valid_wav_files.log',
+logging.basicConfig(filename=LOGS_DIR / 'data-cleaning/copy_valid_wav_files_iter2.log',
                     filemode='w',
                     level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s %(message)s',
@@ -47,7 +47,7 @@ for dirpath, dirnames, filenames in os.walk(LABELS_DIR):
             num_copied_files += 1
 
             if os.path.isfile(wav_file_path):
-                #shutil.copy(wav_file_path, destination_path)
+                shutil.copy(wav_file_path, destination_path)
                 logging.info(f"\nCopied: {wav_file_path} \n------> {destination_path}")
 
 logging.info(f"num_total_files: {num_total_files}")
