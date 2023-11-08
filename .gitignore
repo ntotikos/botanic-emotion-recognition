@@ -17,7 +17,7 @@ results/figures
 src/plots/*.html
 src/plots/*.png
 src/plots/*.npy
-
+src/models/*.db
 # Models
 
 # Environments
