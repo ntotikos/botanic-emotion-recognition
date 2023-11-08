@@ -16,8 +16,9 @@ from src.utils.constants import INT_TO_EKMAN_DICT
 # Get the TS dataset.
 path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
 dataset = EkmanDataset(path_to_pickle)
-dataset.get_data_and_labels_without_neutral()
-dataset.normalize_samples(normalization="min-max-scaling")
+#dataset.load_dataset()
+dataset.load_data_and_labels_without_neutral()
+#dataset.normalize_samples(normalization="min-max-scaling")
 
 print(len(dataset.dataset))
 

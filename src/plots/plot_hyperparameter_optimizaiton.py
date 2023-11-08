@@ -5,9 +5,9 @@ from src.utils.constants import FIGURES_DIR
 import os
 
 
-study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hpo_baseline_108_trials.db")
+study_label = "sqlite:///" + os.path.join(FIGURES_DIR, "fc_hpo_baseline_6_normalized.db")
 #study = optuna.load_study(study_name="fc_study", storage=study_label)
-study = optuna.load_study(study_name="fc_baseline", storage=study_label)
+study = optuna.load_study(study_name="fc_baseline_6_normalized", storage=study_label)
 
 
 #print(study.trials)
