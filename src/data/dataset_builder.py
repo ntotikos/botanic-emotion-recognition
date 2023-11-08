@@ -63,7 +63,7 @@ class EkmanDataset:
         self.dataset = TensorDataset(wav_slices, labels)
         print("Ciaoooooooo", self.dataset[0])
 
-    def get_data_and_labels_without_neutral(self):
+    def load_data_and_labels_without_neutral(self):
         """
         TODO: Create new class EkmanNeutral to account for the Neutral class
         """
@@ -87,7 +87,7 @@ class EkmanDataset:
             data_tensor, labels_tensor = self.dataset.tensors
             mean = torch.mean(data_tensor, dim=1, keepdim=True)
             std_dev = torch.std(data_tensor, dim=1, keepdim=True)
-            standardized_data = (data_tensor - mean) / (std_dev + 1e-8)  # smoothing term to prevent zero division
+            standardized_data = (data_tensor - mean) / (std_dev + 0.00000001)  # smoothing term to prevent zero division
         elif normalization == "per-feature":  # i.e. per column
             data_tensor, labels_tensor = self.dataset.tensors
             mean = torch.mean(data_tensor, dim=0)
@@ -102,7 +102,7 @@ class EkmanDataset:
             data_tensor, labels_tensor = self.dataset.tensors
             minima, _ = torch.min(data_tensor, dim=0)
             maxima, _ = torch.max(data_tensor, dim=0)
-            standardized_data = (data_tensor - minima) / (maxima - minima + 1e-8)
+            standardized_data = (data_tensor - minima) / (maxima - minima + 0.00000001)
 
         self.dataset = TensorDataset(standardized_data, labels_tensor)
 

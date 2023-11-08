@@ -34,6 +34,7 @@ class DenseClassifier(DLClassifier):
 
     def setup_model(self):
         input_dim = 10000
+        #output_dim = 6  # For Ekman neutral: 6
         output_dim = 7  # For Ekman neutral: 7
 
         self.model = torch.nn.Sequential(
@@ -52,9 +53,12 @@ class DenseClassifier(DLClassifier):
 
 def objective(trial, save=False):
     # Get the TS dataset.
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
     dataset = EkmanDataset(path_to_pickle)
     dataset.load_dataset()
+    #dataset.load_data_and_labels_without_neutral()
+    dataset.normalize_samples(normalization="per-sample")
+    #dataset.load_dataset()
     dataset.split_dataset_into_train_val_test(stratify=True)
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="none")
@@ -77,10 +81,11 @@ def objective(trial, save=False):
     model.n_hidden_2 = hidden_dim_2
     model.dropout_rate = dropout_rate
 
-    name_experiment = f"{trial.number}_fc-multi-class_lr-{lr}_hd1-{hidden_dim_1}_hd2-{hidden_dim_2}_dr-{dropout_rate}"
+    name_experiment = (f"{trial.number}_fc-multi-class_7_normalized_191k_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
+                       f"{hidden_dim_2}_dr-{dropout_rate}")
     experiment_notes = """
-    This experiment uses a multi-class FC model for hyperparameter optimization. 
-    The dataset has imbalances among the classes. 
+    This experiment uses a multi-class FC model for hyperparameter optimization AND importantly normalization.
+    The dataset has imbalances among the classes. 7-class and 191k samples with neutral.
     Precision, recall, and F1 metrics are computed with zero_division set to 0.0 to handle potential edge cases.
     Optuna is used for hyperparameter optimization.
     """
@@ -89,11 +94,12 @@ def objective(trial, save=False):
         "lr": lr,
         "hidden_dim_1": hidden_dim_1,
         "hidden_dim_2": hidden_dim_2,
-        "dropout_rate": dropout_rate
+        "dropout_rate": dropout_rate,
+        "epochs": 35
     }
 
     wandb.init(
-        project="fc-baseline-multiclass-hpo",
+        project="fc-baseline-multiclass-6-normalized-hpo",
         dir=LOGS_DIR,
         name=name_experiment,
         notes=experiment_notes,
@@ -101,7 +107,7 @@ def objective(trial, save=False):
     )
 
     # Number of epochs
-    epochs = 25  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+    epochs = 35  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):
@@ -144,24 +150,28 @@ def objective(trial, save=False):
         report = classification_report(
             all_labels,
             all_preds,
-            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
+            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
+            #target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
 
         trial.report(balanced_accuracy, epoch)
 
-        if trial.should_prune():
-            raise optuna.exceptions.TrialPruned()
+        #if trial.should_prune():
+        #    print(f"{trial.number}_fc-multi-class_6_normalized_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
+        #          f"{hidden_dim_2}_dr-{dropout_rate}")
+        #    raise optuna.exceptions.TrialPruned()
 
         trial.set_user_attr("f1_class", f1_class.tolist())
         trial.set_user_attr("f1_weighted", f1_weighted)
         trial.set_user_attr("accuracy", accuracy)
         trial.set_user_attr("precision", precision)
         trial.set_user_attr("recall", recall)
-        #trial.set_user_attr("roc_auc", auc)
+        #trial.set_user_attr("roc_auc", a uc)
         trial.set_user_attr("classification_report", report)
 
-        f1_per_class_dict = {}
-        for idx, class_name in enumerate(EKMAN_EMOTIONS_NEUTRAL):
-            f1_per_class_dict[f"f1_{class_name.lower()}"] = f1_class[idx]
+        # USE THIS ONLY WHEN 7 classes.
+        #f1_per_class_dict = {}
+        #for idx, class_name in enumerate(EKMAN_EMOTIONS_NEUTRAL):
+        #   f1_per_class_dict[f"f1_{class_name.lower()}"] = f1_class[idx]
 
         metrics = {
             "balanced_accuracy": balanced_accuracy,
@@ -169,10 +179,10 @@ def objective(trial, save=False):
             "f1_weighted": f1_weighted,
             "recall": recall,
             "precision": precision
-            #"roc_auc": auc
         }
 
-        wandb_input = metrics | f1_per_class_dict
+        wandb_input = metrics
+        #wandb_input = metrics | f1_per_class_dict
         wandb.log(wandb_input)
 
     wandb.finish()
@@ -189,7 +199,7 @@ def main_hp_optimization():
     }
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
-    study = optuna.create_study(sampler=sampler, study_name="fc_baseline", storage="sqlite:///fc_hpo_baseline.db",
+    study = optuna.create_study(sampler=sampler, study_name="fc_baseline_7_normalized_191k", storage="sqlite:///fc_hpo_baseline_7_normalized_191k.db",
                                 direction="maximize", load_if_exists=True)
     study.optimize(objective, n_trials=108)
 
@@ -239,7 +249,7 @@ def _main(save=True):
     model.n_hidden_2 = hidden_dim_2
 
     # Number of epochs
-    #epochs = 50
+    epochs = 50
 
     # Training loop
     for epoch in range(epochs):
