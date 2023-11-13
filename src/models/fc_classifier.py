@@ -9,7 +9,7 @@ import os
 import pickle
 
 from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, precision_score, recall_score, \
-    classification_report, roc_auc_score
+    classification_report
 
 import optuna
 from optuna.trial import TrialState
@@ -34,8 +34,8 @@ class DenseClassifier(DLClassifier):
 
     def setup_model(self):
         input_dim = 10000
-        #output_dim = 6  # For Ekman neutral: 6
-        output_dim = 7  # For Ekman neutral: 7
+        output_dim = 6  # For Ekman neutral: 6
+        #output_dim = 7  # For Ekman neutral: 7
 
         self.model = torch.nn.Sequential(
             torch.nn.Linear(input_dim, self.n_hidden_1),
@@ -53,10 +53,10 @@ class DenseClassifier(DLClassifier):
 
 def objective(trial, save=False):
     # Get the TS dataset.
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
-    dataset.load_dataset()
-    #dataset.load_data_and_labels_without_neutral()
+    #dataset.load_dataset()
+    dataset.load_data_and_labels_without_neutral()
     dataset.normalize_samples(normalization="per-sample")
     #dataset.load_dataset()
     dataset.split_dataset_into_train_val_test(stratify=True)
@@ -81,7 +81,9 @@ def objective(trial, save=False):
     model.n_hidden_2 = hidden_dim_2
     model.dropout_rate = dropout_rate
 
-    name_experiment = (f"{trial.number}_fc-multi-class_7_normalized_191k_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
+    #name_core = "fc-multi-class_6_normalized_191k"
+    name_core = "fc-multi-class_6_normalized_81k"
+    name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
                        f"{hidden_dim_2}_dr-{dropout_rate}")
     experiment_notes = """
     This experiment uses a multi-class FC model for hyperparameter optimization AND importantly normalization.
@@ -99,7 +101,7 @@ def objective(trial, save=False):
     }
 
     wandb.init(
-        project="fc-baseline-multiclass-6-normalized-hpo",
+        project="baseline_" + name_core + "-hpo",
         dir=LOGS_DIR,
         name=name_experiment,
         notes=experiment_notes,
@@ -198,8 +200,11 @@ def main_hp_optimization():
         "dropout_rate": [0, 0.1, 0.2]
     }
 
+    #name_core = "fc_baseline_6_normalized_191k"
+    name_core = "fc_baseline_6_normalized_81k"
+
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
-    study = optuna.create_study(sampler=sampler, study_name="fc_baseline_7_normalized_191k", storage="sqlite:///fc_hpo_baseline_7_normalized_191k.db",
+    study = optuna.create_study(sampler=sampler, study_name=name_core, storage="sqlite:///hpo_" + name_core + ".db",
                                 direction="maximize", load_if_exists=True)
     study.optimize(objective, n_trials=108)
 
