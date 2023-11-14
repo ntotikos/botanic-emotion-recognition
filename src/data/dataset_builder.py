@@ -248,7 +248,7 @@ class EkmanDataset:
         # TODO: implement removal of neutral class from loaded dataset.
         pass
 
-    def extract_features(self):
+    def extract_features(self, flatten=False):
         """
         Make sure to normalize the time series before computing the MFCC features.
         """
@@ -257,6 +257,11 @@ class EkmanDataset:
 
         for wav_slice, label in tqdm(self.dataset):
             sample_features = self.feature_extractor.extract(wav_slice)
+            if len(features) == 0:
+                print("before flattening: ", sample_features.shape)
+            if flatten:
+                sample_features = sample_features.flatten()
+
             features.append(sample_features)  # sample_features should be torch.Tensor torch.float32!
             labels.append(label)
 
@@ -267,9 +272,9 @@ class EkmanDataset:
         print("Hiiiiiiiiiiiiiiii", self.dataset[0][0])
         print("Size", self.dataset[0][0].size())
 
-        plt.imshow(self.dataset[0][0], cmap='viridis', aspect='auto')
-        plt.colorbar()
-        plt.show()
+        #plt.imshow(self.dataset[0][0], cmap='viridis', aspect='auto')
+        #plt.colorbar()
+        #plt.show()
 
 
 def map_int_to_label(emotion: int):
@@ -285,7 +290,7 @@ if __name__ == "__main__":
     dataset = EkmanDataset(path_to_pickle, feature_type="spectral")
     dataset.load_dataset()
     dataset.normalize_samples()
-    dataset.extract_features()
+    dataset.extract_features(flatten=True)
 
     dataset.split_dataset_into_train_val_test(stratify=True)
 

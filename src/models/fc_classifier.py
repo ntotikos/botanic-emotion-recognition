@@ -33,7 +33,10 @@ class DenseClassifier(DLClassifier):
         return self.forward(x)
 
     def setup_model(self):
-        input_dim = 10000
+        #input_dim = 10000
+        #input_dim = 41184
+        input_dim = 1287  # flattened mfcc dimension
+
         output_dim = 6  # For Ekman neutral: 6
         #output_dim = 7  # For Ekman neutral: 7
 
@@ -102,6 +105,148 @@ def objective(trial, save=False):
 
     wandb.init(
         project="baseline_" + name_core + "-hpo",
+        dir=LOGS_DIR,
+        name=name_experiment,
+        notes=experiment_notes,
+        config=config_dict
+    )
+
+    # Number of epochs
+    epochs = 25  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+
+    # Training loop
+    for epoch in range(epochs):
+        model.model.train()
+        for batch_data, batch_labels in train_dataloader:
+            # Zero gradients
+            model.optimizer.zero_grad()
+
+            # Forward pass
+            outputs = model(batch_data)  # Without implemented __call__ method: model.forward(data)
+
+            # Compute loss
+            loss = model.criterion(outputs, batch_labels)
+
+            # Backward pass and optimize
+            loss.backward()
+            model.optimizer.step()
+
+        all_preds = []
+        all_labels = []
+
+        model.model.eval()
+        with torch.no_grad():
+            for batch_data, batch_labels in val_dataloader:
+                output = model(batch_data)  # 32 x 7
+                #pred = output.argmax(dim=1, keepdims=True)  # 32 x 1
+
+                predicted = output.argmax(dim=1)
+                all_preds.extend(predicted.numpy())
+                all_labels.extend(batch_labels.numpy())
+
+        # TODO: explicitely state in written thesis that zero_division=0.0
+        balanced_accuracy = balanced_accuracy_score(all_labels, all_preds)
+        accuracy = accuracy_score(all_labels, all_preds)
+        f1_class = f1_score(all_labels, all_preds, average=None, zero_division=0.0)
+        f1_weighted = f1_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        recall = recall_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        precision = precision_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        #auc = roc_auc_score(all_labels, all_preds, multi_class='ovr')  # TODO: document this.
+        report = classification_report(
+            all_labels,
+            all_preds,
+            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
+            #target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
+
+        trial.report(balanced_accuracy, epoch)
+
+        #if trial.should_prune():
+        #    print(f"{trial.number}_fc-multi-class_6_normalized_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
+        #          f"{hidden_dim_2}_dr-{dropout_rate}")
+        #    raise optuna.exceptions.TrialPruned()
+
+        trial.set_user_attr("f1_class", f1_class.tolist())
+        trial.set_user_attr("f1_weighted", f1_weighted)
+        trial.set_user_attr("accuracy", accuracy)
+        trial.set_user_attr("precision", precision)
+        trial.set_user_attr("recall", recall)
+        #trial.set_user_attr("roc_auc", a uc)
+        trial.set_user_attr("classification_report", report)
+
+        # USE THIS ONLY WHEN 7 classes.
+        #f1_per_class_dict = {}
+        #for idx, class_name in enumerate(EKMAN_EMOTIONS_NEUTRAL):
+        #   f1_per_class_dict[f"f1_{class_name.lower()}"] = f1_class[idx]
+
+        metrics = {
+            "balanced_accuracy": balanced_accuracy,
+            "accuracy": accuracy,
+            "f1_weighted": f1_weighted,
+            "recall": recall,
+            "precision": precision
+        }
+
+        wandb_input = metrics
+        #wandb_input = metrics | f1_per_class_dict
+        wandb.log(wandb_input)
+
+    wandb.finish()
+
+    return balanced_accuracy
+
+
+def objective_mfcc(trial, save=False):
+    # Get the TS dataset.
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
+    dataset = EkmanDataset(path_to_pickle, feature_type="spectral")
+    #dataset.load_dataset()
+    dataset.load_data_and_labels_without_neutral()
+    dataset.normalize_samples(normalization="per-sample")
+    #dataset.load_dataset()
+    dataset.extract_features(flatten=True)
+    dataset.split_dataset_into_train_val_test(stratify=True)
+
+    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="none")
+
+    dataset.get_label_distribution(train_dataloader)
+
+    # Generate the model.
+    model = DenseClassifier("params")
+    model.setup_model()
+    model.setup_training()
+
+    # HP search space.
+    lr = trial.suggest_categorical('lr', [0.0001, 0.001, 0.01])
+    hidden_dim_1 = trial.suggest_categorical('hidden_dim_1', [2 ** i for i in range(4, 8)])
+    hidden_dim_2 = trial.suggest_categorical('hidden_dim_2', [2 ** i for i in range(4, 7)])
+    dropout_rate = trial.suggest_categorical('dropout_rate', [0, 0.1, 0.2])
+
+    model.learning_rate = lr
+    model.n_hidden_1 = hidden_dim_1
+    model.n_hidden_2 = hidden_dim_2
+    model.dropout_rate = dropout_rate
+
+    name_core = "mfcc-fc-multi-class_6_normalized_191k"
+    #name_core = "mfcc-fc-multi-class_6_normalized_81k"
+    name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
+                       f"{hidden_dim_2}_dr-{dropout_rate}")
+    experiment_notes = """
+    This experiment uses a multi-class FC model for hyperparameter optimization AND importantly normalization.
+    The dataset has imbalances among the classes. 7-class and 191k samples with neutral.
+    Precision, recall, and F1 metrics are computed with zero_division set to 0.0 to handle potential edge cases.
+    Optuna is used for hyperparameter optimization.
+    """
+
+    config_dict = {
+        "lr": lr,
+        "hidden_dim_1": hidden_dim_1,
+        "hidden_dim_2": hidden_dim_2,
+        "dropout_rate": dropout_rate,
+        "epochs": 35
+    }
+
+    wandb.init(
+        project= name_core + "-hpo",
         dir=LOGS_DIR,
         name=name_experiment,
         notes=experiment_notes,
@@ -282,6 +427,41 @@ def _main(save=True):
             pickle.dump(model, pkl)
 
 
+def main_hp_optimization_mfcc():
+    search_space = {
+        'lr': [0.0001, 0.001, 0.01],
+        'hidden_dim_1': [2 ** i for i in range(4, 8)],
+        'hidden_dim_2': [2 ** i for i in range(4, 7)],
+        "dropout_rate": [0, 0.1, 0.2]
+    }
+
+    name_core = "fc_mfcc_6_normalized_191k"
+    #name_core = "fc_mfcc_6_normalized_81k"
+
+    sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
+    study = optuna.create_study(sampler=sampler, study_name=name_core, storage="sqlite:///hpo_" + name_core + ".db",
+                                direction="maximize", load_if_exists=True)
+    study.optimize(objective_mfcc, n_trials=108)
+
+    pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
+    complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
+
+    print("Study statistics: ")
+    print("  Number of finished trials: ", len(study.trials))
+    print("  Number of pruned trials: ", len(pruned_trials))
+    print("  Number of complete trials: ", len(complete_trials))
+
+    print("Best trial:")
+    trial_ = study.best_trial
+
+    print("  Value: ", trial_.value)
+
+    print("  Params: ")
+    for key, value in trial_.params.items():
+        print("    {}: {}".format(key, value))
+
+
 if __name__ == "__main__":
-    main_hp_optimization()
+    # main_hp_optimization()  # raw TS
     #_main(False)
+    main_hp_optimization_mfcc()  # MFCCs
