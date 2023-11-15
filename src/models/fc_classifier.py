@@ -37,8 +37,8 @@ class DenseClassifier(DLClassifier):
         #input_dim = 41184
         input_dim = 1287  # flattened mfcc dimension
 
-        output_dim = 6  # For Ekman neutral: 6
-        #output_dim = 7  # For Ekman neutral: 7
+        # output_dim = 6  # For Ekman neutral: 6
+        output_dim = 7  # For Ekman neutral: 7
 
         self.model = torch.nn.Sequential(
             torch.nn.Linear(input_dim, self.n_hidden_1),
@@ -199,8 +199,8 @@ def objective_mfcc(trial, save=False):
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
     dataset = EkmanDataset(path_to_pickle, feature_type="spectral")
-    #dataset.load_dataset()
-    dataset.load_data_and_labels_without_neutral()
+    dataset.load_dataset()
+    #dataset.load_data_and_labels_without_neutral()
     dataset.normalize_samples(normalization="per-sample")
     #dataset.load_dataset()
     dataset.extract_features(flatten=True)
@@ -226,7 +226,7 @@ def objective_mfcc(trial, save=False):
     model.n_hidden_2 = hidden_dim_2
     model.dropout_rate = dropout_rate
 
-    name_core = "mfcc-fc-multi-class_6_normalized_191k"
+    name_core = "mfcc-fc-multi-class_7_normalized_191k"
     #name_core = "mfcc-fc-multi-class_6_normalized_81k"
     name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
                        f"{hidden_dim_2}_dr-{dropout_rate}")
@@ -242,7 +242,7 @@ def objective_mfcc(trial, save=False):
         "hidden_dim_1": hidden_dim_1,
         "hidden_dim_2": hidden_dim_2,
         "dropout_rate": dropout_rate,
-        "epochs": 35
+        "epochs": 30
     }
 
     wandb.init(
@@ -254,7 +254,7 @@ def objective_mfcc(trial, save=False):
     )
 
     # Number of epochs
-    epochs = 35  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+    epochs = 30  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):
@@ -297,8 +297,8 @@ def objective_mfcc(trial, save=False):
         report = classification_report(
             all_labels,
             all_preds,
-            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
-            #target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
+            #target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
+            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
 
         trial.report(balanced_accuracy, epoch)
 
@@ -435,7 +435,7 @@ def main_hp_optimization_mfcc():
         "dropout_rate": [0, 0.1, 0.2]
     }
 
-    name_core = "fc_mfcc_6_normalized_191k"
+    name_core = "fc_mfcc_7_normalized_191k"
     #name_core = "fc_mfcc_6_normalized_81k"
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
