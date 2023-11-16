@@ -22,7 +22,7 @@ from src.utils.reproducibility import set_seed
 
 
 class EkmanDataset:
-    def __init__(self, data_path, feature_type="passthrough"):
+    def __init__(self, data_path, feature_type="passthrough", method_type="mfcc"):
         """
         :param data_path: Path to pickle file with data point dictionaries.
         """
@@ -30,7 +30,8 @@ class EkmanDataset:
             raw_data = pickle.load(file)
 
         self.raw_data = raw_data
-        self.feature_extractor = FeatureFactory.get_extractor(feature_type)
+        self.feature_extractor = FeatureFactory.get_extractor(feature_type, method_type)
+        self.method_type = method_type
 
         self.dataset = None
         self.features_dataset = None
@@ -256,7 +257,7 @@ class EkmanDataset:
         labels = []
 
         for wav_slice, label in tqdm(self.dataset):
-            sample_features = self.feature_extractor.extract(wav_slice)
+            sample_features = self.feature_extractor.extract(wav_slice, method_type=self.method_type)
             if len(features) == 0:
                 print("before flattening: ", sample_features.shape)
             if flatten:
@@ -287,7 +288,7 @@ if __name__ == "__main__":
     """
     Plot class distribution balanced vs. imbalanced. 
     """
-    dataset = EkmanDataset(path_to_pickle, feature_type="spectral")
+    dataset = EkmanDataset(path_to_pickle, feature_type="spectral", method_type="mfcc")
     dataset.load_dataset()
     dataset.normalize_samples()
     dataset.extract_features(flatten=True)

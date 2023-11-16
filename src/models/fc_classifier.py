@@ -33,9 +33,9 @@ class DenseClassifier(DLClassifier):
         return self.forward(x)
 
     def setup_model(self):
-        #input_dim = 10000
-        #input_dim = 41184
-        input_dim = 1287  # flattened mfcc dimension
+        #input_dim = 10000 # raw time-series dimension
+        #input_dim = 1287  # flattened mfcc dimension
+        input_dim = 10004
 
         # output_dim = 6  # For Ekman neutral: 6
         output_dim = 7  # For Ekman neutral: 7
@@ -195,14 +195,15 @@ def objective(trial, save=False):
     return balanced_accuracy
 
 
-def objective_mfcc(trial, save=False):
+def objective_spectral(trial, save=False):
+    method = "dwt-1"
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
-    dataset = EkmanDataset(path_to_pickle, feature_type="spectral")
+    dataset = EkmanDataset(path_to_pickle, feature_type="spectral", method_type=method)
     dataset.load_dataset()
     #dataset.load_data_and_labels_without_neutral()
+
     dataset.normalize_samples(normalization="per-sample")
-    #dataset.load_dataset()
     dataset.extract_features(flatten=True)
     dataset.split_dataset_into_train_val_test(stratify=True)
 
@@ -427,7 +428,7 @@ def _main(save=True):
             pickle.dump(model, pkl)
 
 
-def main_hp_optimization_mfcc():
+def main_hp_optimization_spectral():
     search_space = {
         'lr': [0.0001, 0.001, 0.01],
         'hidden_dim_1': [2 ** i for i in range(4, 8)],
@@ -441,7 +442,7 @@ def main_hp_optimization_mfcc():
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
     study = optuna.create_study(sampler=sampler, study_name=name_core, storage="sqlite:///hpo_" + name_core + ".db",
                                 direction="maximize", load_if_exists=True)
-    study.optimize(objective_mfcc, n_trials=108)
+    study.optimize(objective_spectral, n_trials=108)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
@@ -464,4 +465,4 @@ def main_hp_optimization_mfcc():
 if __name__ == "__main__":
     # main_hp_optimization()  # raw TS
     #_main(False)
-    main_hp_optimization_mfcc()  # MFCCs
+    main_hp_optimization_spectral()  # MFCCs
