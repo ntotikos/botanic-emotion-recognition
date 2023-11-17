@@ -199,12 +199,12 @@ def objective_spectral(trial, save=False):
     method = "dwt-1"
 
     # Get the TS dataset.
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle, feature_type="spectral", method_type=method)
     #dataset.load_dataset()
     dataset.load_data_and_labels_without_neutral()
 
-    dataset.normalize_samples(normalization="per-sample")
+    #dataset.normalize_samples(normalization="per-sample")
     #dataset.extract_features(flatten=True) # For MFCC
     dataset.extract_features(flatten=False)
     dataset.split_dataset_into_train_val_test(stratify=True)
@@ -234,7 +234,7 @@ def objective_spectral(trial, save=False):
     #name_core = "mfcc-fc-multi-class_6_normalized_81k"
 
     # Wavelet DWT-1
-    name_core = "dwt1-fc-multi-class_6_normalized_191k"
+    name_core = "dwt1-fc-multi-class_6_normalized-after-dwt_81k"
     #name_core = "dwt1-fc-multi-class_6_normalized_81k"
 
     name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
@@ -251,7 +251,7 @@ def objective_spectral(trial, save=False):
         "hidden_dim_1": hidden_dim_1,
         "hidden_dim_2": hidden_dim_2,
         "dropout_rate": dropout_rate,
-        "epochs": 35
+        "epochs": 13
     }
 
     wandb.init(
@@ -263,7 +263,7 @@ def objective_spectral(trial, save=False):
     )
 
     # Number of epochs
-    epochs = 35  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+    epochs = 13  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):
@@ -449,7 +449,7 @@ def main_hp_optimization_spectral():
     #name_core = "fc_mfcc_6_normalized_81k"
 
     # Wavelet
-    name_core = "fc_dwt1_6_normalized_191k"
+    name_core = "fc_dwt1_6_normalized-after-dwt_81k"
     #name_core = "fc_dwt1_6_normalized_81k"
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search

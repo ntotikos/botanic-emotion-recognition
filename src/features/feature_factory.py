@@ -43,10 +43,21 @@ class SpectralFeatures(FeatureExtractor):
         elif method_type == "dwt-1":
             wav_slice_np = wav_slice.numpy()
             (cA, cD) = pywt.dwt(wav_slice_np, "bior1.3")
-            spectral_features = np.concatenate([cA, cD], axis=0)
-            #spectral_features = torch.cat([cA, cD], dim=0)
+            """
+            Normalize DWT features after their computation (per sample). IMPORTANT: this is only an experiment. 
+            The normalization step of the raw TS is skipped to see if the dwt computes better features in this case. 
+            """
 
-            #print("spectral", "dwt-1")
+            mean_ca = np.mean(cA)
+            std_dev_ca = np.std(cA)
+            standardized_ca = (cA - mean_ca) / (std_dev_ca + 0.00000001)
+
+            mean_cd = np.mean(cD)
+            std_dev_cd = np.std(cD)
+            standardized_cd = (cD - mean_cd) / (std_dev_cd + 0.00000001)
+
+            spectral_features = np.concatenate([standardized_ca, standardized_cd], axis=0)
+
         elif method_type == "dwt-3":
             spectral_features = None
             print("spectral", "dwt-3")
