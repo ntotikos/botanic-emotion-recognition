@@ -59,8 +59,21 @@ class SpectralFeatures(FeatureExtractor):
             spectral_features = np.concatenate([standardized_ca, standardized_cd], axis=0)
 
         elif method_type == "dwt-3":
-            spectral_features = None
-            print("spectral", "dwt-3")
+            wav_slice_np = wav_slice.numpy()
+            dwt_coeffs = pywt.wavedec(wav_slice_np, wavelet="bior1.3", level=3)
+
+            normalized_coeffs = []
+
+            for i in range(len(dwt_coeffs)):
+                coeff_i = dwt_coeffs[i]
+
+                mean_coeff_i = np.mean(coeff_i)
+                std_dev_coeff_i = np.std(coeff_i)
+                standardized_coeff_i = (coeff_i - mean_coeff_i) / (std_dev_coeff_i + 0.00000001)
+
+                normalized_coeffs.append(standardized_coeff_i)
+
+            spectral_features = np.concatenate(normalized_coeffs, axis=0)
         elif method_type == "scaleogramm":
             pass
         return spectral_features

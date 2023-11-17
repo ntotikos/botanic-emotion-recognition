@@ -35,7 +35,8 @@ class DenseClassifier(DLClassifier):
     def setup_model(self):
         #input_dim = 10000 # raw time-series dimension
         #input_dim = 1287  # flattened mfcc dimension
-        input_dim = 10004
+        #input_dim = 10004  # dwt-1
+        input_dim = 10013
 
         output_dim = 6  # For Ekman neutral: 6
         #output_dim = 7  # For Ekman neutral: 7
@@ -196,10 +197,10 @@ def objective(trial, save=False):
 
 
 def objective_spectral(trial, save=False):
-    method = "dwt-1"
+    method = "dwt-3"
 
     # Get the TS dataset.
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
     dataset = EkmanDataset(path_to_pickle, feature_type="spectral", method_type=method)
     #dataset.load_dataset()
     dataset.load_data_and_labels_without_neutral()
@@ -234,7 +235,7 @@ def objective_spectral(trial, save=False):
     #name_core = "mfcc-fc-multi-class_6_normalized_81k"
 
     # Wavelet DWT-1
-    name_core = "dwt1-fc-multi-class_6_normalized-after-dwt_81k"
+    name_core = "dwt3-fc-multi-class_6_normalized-after-dwt_191k"
     #name_core = "dwt1-fc-multi-class_6_normalized_81k"
 
     name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
@@ -251,7 +252,7 @@ def objective_spectral(trial, save=False):
         "hidden_dim_1": hidden_dim_1,
         "hidden_dim_2": hidden_dim_2,
         "dropout_rate": dropout_rate,
-        "epochs": 13
+        "epochs": 20
     }
 
     wandb.init(
@@ -263,7 +264,7 @@ def objective_spectral(trial, save=False):
     )
 
     # Number of epochs
-    epochs = 13  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+    epochs = 20  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):
@@ -449,7 +450,7 @@ def main_hp_optimization_spectral():
     #name_core = "fc_mfcc_6_normalized_81k"
 
     # Wavelet
-    name_core = "fc_dwt1_6_normalized-after-dwt_81k"
+    name_core = "fc_dwt3_6_normalized-after-dwt_191k"
     #name_core = "fc_dwt1_6_normalized_81k"
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
@@ -478,4 +479,6 @@ def main_hp_optimization_spectral():
 if __name__ == "__main__":
     # main_hp_optimization()  # raw TS
     #_main(False)
-    main_hp_optimization_spectral()  # MFCCs + Wavelet
+    main_hp_optimization_spectral()  # MFCCs + Wavelet (level 1 & 3)
+
+
