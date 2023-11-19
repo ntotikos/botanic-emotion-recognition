@@ -37,7 +37,10 @@ class DenseClassifier(DLClassifier):
         #input_dim = 1287  # flattened mfcc dimension
         #input_dim = 10004  # dwt-1
         #input_dim = 10013  # dwt-3
-        input_dim = 2500  # cwt with downsampled wav
+        #input_dim = 2500  # cwt with downsampled 20 wav
+        #input_dim = 5000  # cwt with downsampled 10 wav
+        input_dim = 1000  # cwt with downsampled 10 wav
+
 
         output_dim = 6  # For Ekman neutral: 6
         #output_dim = 7  # For Ekman neutral: 7
@@ -201,7 +204,7 @@ def objective_spectral(trial, save=False):
     method = "cwt"
 
     # Get the TS dataset.
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle, feature_type="spectral", method_type=method)
     #dataset.load_dataset()
     dataset.load_data_and_labels_without_neutral()
@@ -240,7 +243,7 @@ def objective_spectral(trial, save=False):
     #name_core = "dwt1-fc-multi-class_6_normalized_81k"
 
     # Wavelet CWT
-    name_core = "cwt-fc-multi-class_6_ds_abs-norm-coeffs_191k"  # ds = downsampled
+    name_core = "cwt-fc-multi-class_6_ds_abs-norm-coeffs_81k"  # ds = downsampled
     #name_core = "cwt-fc-multi-class_6_abs-norm-coeffs_81k"
 
     name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
@@ -459,7 +462,7 @@ def main_hp_optimization_spectral():
     #name_core = "fc_dwt1_6_normalized_81k"
 
     # CWT
-    name_core = "fc_cwt_6_ds_abs-norm-coeffs_191k"
+    name_core = "fc_cwt_6_ds_abs-norm-coeffs_81k"
     #name_core = "fc_cwt_6_abs-norm-coeffs_81k"
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search

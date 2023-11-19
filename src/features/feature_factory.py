@@ -78,7 +78,7 @@ class SpectralFeatures(FeatureExtractor):
             spectral_features = np.concatenate(normalized_coeffs, axis=0)
         elif method_type == "cwt":
             wav_slice_np = wav_slice.numpy()
-            downsampling_factor = 10
+            downsampling_factor = 50
             downsampled_wav = wav_slice_np[::downsampling_factor]  # downsampling factor 20
 
             # Values were determines experimentally.
@@ -96,6 +96,16 @@ class SpectralFeatures(FeatureExtractor):
 
             normalized_coeffs = (abs_coeffs - mean_coeffs) / (std_dev_coeffs + 0.00000001)
             spectral_features = np.concatenate(normalized_coeffs, axis=0)
+
+            import matplotlib.pyplot as plt
+            plt.imshow(normalized_coeffs, aspect='auto',
+                       extent=[0, len(downsampled_wav), frequencies[-1], frequencies[0]])
+
+            # plt.colorbar(label='Magnitude')
+            # plt.xlabel('Time')
+            # plt.ylabel('Frequency')
+            # plt.title('Continuous Wavelet Transform')
+            # plt.show()
         elif method_type == "scaleogramm":
             pass
         return spectral_features
