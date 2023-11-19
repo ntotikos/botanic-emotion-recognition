@@ -36,7 +36,8 @@ class DenseClassifier(DLClassifier):
         #input_dim = 10000 # raw time-series dimension
         #input_dim = 1287  # flattened mfcc dimension
         #input_dim = 10004  # dwt-1
-        input_dim = 10013
+        #input_dim = 10013  # dwt-3
+        input_dim = 2500  # cwt with downsampled wav
 
         output_dim = 6  # For Ekman neutral: 6
         #output_dim = 7  # For Ekman neutral: 7
@@ -197,7 +198,7 @@ def objective(trial, save=False):
 
 
 def objective_spectral(trial, save=False):
-    method = "dwt-3"
+    method = "cwt"
 
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
@@ -234,9 +235,13 @@ def objective_spectral(trial, save=False):
     #name_core = "mfcc-fc-multi-class_7_normalized_191k"
     #name_core = "mfcc-fc-multi-class_6_normalized_81k"
 
-    # Wavelet DWT-1
+    # Wavelet DWT
     name_core = "dwt3-fc-multi-class_6_normalized-after-dwt_191k"
     #name_core = "dwt1-fc-multi-class_6_normalized_81k"
+
+    # Wavelet CWT
+    name_core = "cwt-fc-multi-class_6_ds_abs-norm-coeffs_191k"  # ds = downsampled
+    #name_core = "cwt-fc-multi-class_6_abs-norm-coeffs_81k"
 
     name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
                        f"{hidden_dim_2}_dr-{dropout_rate}")
@@ -449,9 +454,13 @@ def main_hp_optimization_spectral():
     #name_core = "fc_mfcc_7_normalized_191k"
     #name_core = "fc_mfcc_6_normalized_81k"
 
-    # Wavelet
-    name_core = "fc_dwt3_6_normalized-after-dwt_191k"
+    # Discrete Wavelet
+    #name_core = "fc_dwt3_6_normalized-after-dwt_191k"
     #name_core = "fc_dwt1_6_normalized_81k"
+
+    # CWT
+    name_core = "fc_cwt_6_ds_abs-norm-coeffs_191k"
+    #name_core = "fc_cwt_6_abs-norm-coeffs_81k"
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
     study = optuna.create_study(sampler=sampler, study_name=name_core, storage="sqlite:///hpo_" + name_core + ".db",
@@ -479,6 +488,6 @@ def main_hp_optimization_spectral():
 if __name__ == "__main__":
     # main_hp_optimization()  # raw TS
     #_main(False)
-    main_hp_optimization_spectral()  # MFCCs + Wavelet (level 1 & 3)
+    main_hp_optimization_spectral()  # MFCCs + DWT (level 1 & 3) + CWT
 
 

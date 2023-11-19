@@ -41,3 +41,7 @@ EKMAN_NEUTRAL_TO_INT_DICT = {EKMAN_EMOTIONS_NEUTRAL[i]: i for i in range(len(EKM
 
 INT_TO_EKMAN_DICT = {i: EKMAN_EMOTIONS[i] for i in range(len(EKMAN_EMOTIONS))}
 INT_TO_EKMAN_NEUTRAL_DICT = {i: EKMAN_EMOTIONS_NEUTRAL[i] for i in range(len(EKMAN_EMOTIONS_NEUTRAL))}
+
+
+# Signal
+SAMPLING_RATE = 10000  # Samples per second

@@ -9,6 +9,8 @@ import torch
 from src.data.data_segmentation import read_plant_file
 from python_speech_features import mfcc
 
+from src.utils.constants import SAMPLING_RATE
+
 """
 1. For MFCC features: Read one entire teamwork session plant file, i.e. not the 1s slices, because of sliding window. 
 2. For other features: 1s slices are needed as we compute manual features for these slices. LOAD 1s slices from disk. 
@@ -39,7 +41,7 @@ class SpectralFeatures(FeatureExtractor):
         spectral_features = None
         if method_type == "mfcc":
             spectral_features = mfcc(wav_slice, samplerate=10000, winlen=0.025, winstep=0.010, numcep=13)
-            #print("spectral", "mfcc")
+
         elif method_type == "dwt-1":
             wav_slice_np = wav_slice.numpy()
             (cA, cD) = pywt.dwt(wav_slice_np, "bior1.3")
@@ -73,6 +75,26 @@ class SpectralFeatures(FeatureExtractor):
 
                 normalized_coeffs.append(standardized_coeff_i)
 
+            spectral_features = np.concatenate(normalized_coeffs, axis=0)
+        elif method_type == "cwt":
+            wav_slice_np = wav_slice.numpy()
+            downsampling_factor = 10
+            downsampled_wav = wav_slice_np[::downsampling_factor]  # downsampling factor 20
+
+            # Values were determines experimentally.
+            freq_range = (1, 6)  #
+            scales = SAMPLING_RATE / (downsampling_factor * 2 * np.arange(freq_range[0], freq_range[1]))
+
+            cwt_coeffs, frequencies = pywt.cwt(downsampled_wav, scales, wavelet='morl')
+
+            # Compute abs because it will be used for plot as well and values are more obvious.
+            abs_coeffs = np.abs(cwt_coeffs)
+
+            # Normalization
+            mean_coeffs = np.mean(abs_coeffs)
+            std_dev_coeffs = np.std(abs_coeffs)
+
+            normalized_coeffs = (abs_coeffs - mean_coeffs) / (std_dev_coeffs + 0.00000001)
             spectral_features = np.concatenate(normalized_coeffs, axis=0)
         elif method_type == "scaleogramm":
             pass
