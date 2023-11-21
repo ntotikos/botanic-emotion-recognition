@@ -260,7 +260,7 @@ def objective_spectral(trial, save=False):
         "hidden_dim_1": hidden_dim_1,
         "hidden_dim_2": hidden_dim_2,
         "dropout_rate": dropout_rate,
-        "epochs": 20
+        "epochs": 35
     }
 
     wandb.init(
@@ -272,7 +272,7 @@ def objective_spectral(trial, save=False):
     )
 
     # Number of epochs
-    epochs = 20  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+    epochs = 35  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
 
     # Training loop
     for epoch in range(epochs):

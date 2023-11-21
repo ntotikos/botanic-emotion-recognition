@@ -283,7 +283,7 @@ def map_int_to_label(emotion: int):
 
 
 if __name__ == "__main__":
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
 
     """
     Plot class distribution balanced vs. imbalanced. 
@@ -295,13 +295,17 @@ if __name__ == "__main__":
 
     dataset.split_dataset_into_train_val_test(stratify=True)
 
-    train_dl, _, _ = dataset.create_data_loader(upsampling="none")
+    train_dl, val_dl, test_dl = dataset.create_data_loader(upsampling="none")
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
 
-    output = dataset.get_label_distribution(train_dl)
-    output_2 = dataset.get_label_distribution(train_dataloader)
+    output_train = dataset.get_label_distribution(train_dl)
+    output_val = dataset.get_label_distribution(val_dl)
+    output_test = dataset.get_label_distribution(test_dl)
+    print("OUTPUT TRAIN:", output_train)
+    print("OUTPUT VAL:", output_val)
+    print("OUTPUT TEST", output_test)
 
-    print("OUTPUT:", output)
+    output_2 = dataset.get_label_distribution(train_dataloader)
     print("OUTPUT 2:", output_2)
 
     """
