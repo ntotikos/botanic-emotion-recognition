@@ -132,9 +132,10 @@ class EkmanDataset:
 
             #print(y)
             #print(indices)
-            #print(len(train_indices))
-            #print(len(test_indices))
-            #print(len(val_indices))
+            print(train_indices)
+            print("len train:", len(train_indices))
+            print("len test", len(test_indices))
+            print("len val", len(val_indices))
 
             self.train_data = Subset(self.dataset, train_indices)
             self.test_data = Subset(self.dataset, test_indices)
@@ -283,30 +284,30 @@ def map_int_to_label(emotion: int):
 
 
 if __name__ == "__main__":
-    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_iter2.pkl"
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
 
     """
     Plot class distribution balanced vs. imbalanced. 
     """
-    dataset = EkmanDataset(path_to_pickle, feature_type="spectral", method_type="mfcc")
-    dataset.load_dataset()
-    dataset.normalize_samples()
-    dataset.extract_features(flatten=True)
-
-    dataset.split_dataset_into_train_val_test(stratify=True)
-
-    train_dl, val_dl, test_dl = dataset.create_data_loader(upsampling="none")
-    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
-
-    output_train = dataset.get_label_distribution(train_dl)
-    output_val = dataset.get_label_distribution(val_dl)
-    output_test = dataset.get_label_distribution(test_dl)
-    print("OUTPUT TRAIN:", output_train)
-    print("OUTPUT VAL:", output_val)
-    print("OUTPUT TEST", output_test)
-
-    output_2 = dataset.get_label_distribution(train_dataloader)
-    print("OUTPUT 2:", output_2)
+    # dataset = EkmanDataset(path_to_pickle, feature_type="spectral", method_type="mfcc")
+    # dataset.load_dataset()
+    # dataset.normalize_samples()
+    # dataset.extract_features(flatten=True)
+    #
+    # dataset.split_dataset_into_train_val_test(stratify=True)
+    #
+    # train_dl, val_dl, test_dl = dataset.create_data_loader(upsampling="none")
+    # train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="naive")
+    #
+    # output_train = dataset.get_label_distribution(train_dl)
+    # output_val = dataset.get_label_distribution(val_dl)
+    # output_test = dataset.get_label_distribution(test_dl)
+    # print("OUTPUT TRAIN:", output_train)
+    # print("OUTPUT VAL:", output_val)
+    # print("OUTPUT TEST", output_test)
+    #
+    # output_2 = dataset.get_label_distribution(train_dataloader)
+    # print("OUTPUT 2:", output_2)
 
     """
     Class decomposition: split multi-class dataset into 21 binary datasets.
@@ -314,3 +315,4 @@ if __name__ == "__main__":
     #dataset = EkmanDataset(path_to_pickle)
     #dataset.load_dataset()
     #dataset.class_decomposition()
+
