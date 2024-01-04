@@ -42,8 +42,8 @@ class DenseClassifier(DLClassifier):
         #input_dim = 1000  # cwt with downsampled 10 wav
 
 
-        #output_dim = 6  # For Ekman neutral: 6
-        output_dim = 7  # For Ekman neutral: 7
+        output_dim = 6  # For Ekman neutral: 6
+        #output_dim = 7  # For Ekman neutral: 7
 
         self.model = torch.nn.Sequential(
             torch.nn.Linear(input_dim, self.n_hidden_1),
@@ -63,8 +63,8 @@ def objective(trial, save=False):
     # Get the TS dataset.
     path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
     dataset = EkmanDataset(path_to_pickle)
-    dataset.load_dataset()
-    #dataset.load_data_and_labels_without_neutral()
+    #dataset.load_dataset()
+    dataset.load_data_and_labels_without_neutral()
     dataset.normalize_samples(normalization="per-sample")
     #dataset.load_dataset()
     dataset.split_dataset_into_train_val_test(stratify=True)
@@ -90,7 +90,7 @@ def objective(trial, save=False):
     model.dropout_rate = dropout_rate
 
     #name_core = "fc-multi-class_6_normalized_191k"
-    name_core = "fc-multi-class_7_normalized_81k"
+    name_core = "fc-multi-class_6_normalized_81k"
     name_experiment = (f"{trial.number}_{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
                        f"{hidden_dim_2}_dr-{dropout_rate}")
     experiment_notes = """
@@ -123,6 +123,7 @@ def objective(trial, save=False):
     for epoch in range(epochs):
         model.model.train()
         for batch_data, batch_labels in train_dataloader:
+            print("Batch_data[0]: ", batch_data[0])
             # Zero gradients
             model.optimizer.zero_grad()
 
@@ -160,8 +161,8 @@ def objective(trial, save=False):
         report = classification_report(
             all_labels,
             all_preds,
-            #target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
-            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
+            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
+            #target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
 
         trial.report(balanced_accuracy, epoch)
 
@@ -264,10 +265,11 @@ def objective_spectral(trial, save=False):
     }
 
     wandb.init(
-        project= name_core + "-hpo",
-        dir=LOGS_DIR,
+        #project= name_core + "-hpo",
+        project="training",
+        #dir=LOGS_DIR,
         name=name_experiment,
-        notes=experiment_notes,
+        #notes=experiment_notes,
         config=config_dict
     )
 
@@ -363,8 +365,8 @@ def main_hp_optimization():
         "dropout_rate": [0, 0.1, 0.2]
     }
 
-    #name_core = "fc_baseline_6_normalized_191k"
-    name_core = "fc_baseline_7_normalized_81k"
+    name_core = "fc_baseline_6_normalized_81k"
+    #name_core = "fc_baseline_7_normalized_81k"
 
     sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
     study = optuna.create_study(sampler=sampler, study_name=name_core, storage="sqlite:///hpo_" + name_core + ".db",
@@ -487,10 +489,200 @@ def main_hp_optimization_spectral():
         print("    {}: {}".format(key, value))
 
 
+def main_train_val():
+    # Hyperparameters
+    lr = 0.01
+    hidden_dim_1 = 64
+    hidden_dim_2 = 32
+    dropout_rate = 0.2
+
+    epochs = 80
+
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
+    dataset = EkmanDataset(path_to_pickle)
+    # dataset.load_dataset()
+    dataset.load_data_and_labels_without_neutral()
+    dataset.normalize_samples(normalization="per-sample")
+    # dataset.load_dataset()
+    dataset.split_dataset_into_train_val_test(stratify=True)
+
+    train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="none")
+
+    dataset.get_label_distribution(train_dataloader)
+
+    # Generate the model.
+    model = DenseClassifier("params")
+    model.setup_model()
+    model.setup_training()
+
+    model.learning_rate = lr
+    model.n_hidden_1 = hidden_dim_1
+    model.n_hidden_2 = hidden_dim_2
+    model.dropout_rate = dropout_rate
+
+    name_core = f"fc-6_normalized_81k-epochs-{epochs}"
+    name_experiment = (f"baseline-hpo3-{name_core}_lr-{lr}_hd1-{hidden_dim_1}_hd2-"
+                       f"{hidden_dim_2}_dr-{dropout_rate}")
+
+    config_dict = {
+        "lr": lr,
+        "hidden_dim_1": hidden_dim_1,
+        "hidden_dim_2": hidden_dim_2,
+        "dropout_rate": dropout_rate,
+        "epochs": 80
+    }
+
+    wandb.init(
+        project="training",
+        dir=LOGS_DIR,
+        name=name_experiment,
+        config=config_dict
+    )
+
+    # Directories
+    model_dir = MODELS_DIR / name_core
+
+    run_id = 10  # 1....10
+    run_dir = model_dir / f"run-{run_id}"
+    os.makedirs(run_dir, exist_ok=True)
+
+
+    # Track validation metrics
+    best_val_balanced_accuracy = 0.0
+    best_epoch = 0
+    best_model_info_dict = {}
+
+    # Training loop
+    for epoch in range(epochs):
+        model.model.train()
+        for batch_data, batch_labels in train_dataloader:
+            # Zero gradients
+            model.optimizer.zero_grad()
+
+            # Forward pass
+            outputs = model(batch_data)  # Without implemented __call__ method: model.forward(data)
+
+            # Compute loss
+            loss = model.criterion(outputs, batch_labels)
+
+            # Backward pass and optimize
+            loss.backward()
+            model.optimizer.step()
+
+        all_preds = []
+        all_labels = []
+
+        model.model.eval()
+        with torch.no_grad():
+            for batch_data, batch_labels in val_dataloader:
+                output = model(batch_data)  # 32 x 7
+                # pred = output.argmax(dim=1, keepdims=True)  # 32 x 1
+
+                predicted = output.argmax(dim=1)
+                all_preds.extend(predicted.numpy())
+                all_labels.extend(batch_labels.numpy())
+
+        # TODO: explicitely state in written thesis that zero_division=0.0
+        balanced_accuracy = balanced_accuracy_score(all_labels, all_preds)
+        accuracy = accuracy_score(all_labels, all_preds)
+        f1_class = f1_score(all_labels, all_preds, average=None, zero_division=0.0)
+        f1_weighted = f1_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        recall = recall_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        precision = precision_score(all_labels, all_preds, average="weighted", zero_division=0.0)
+        report = classification_report(
+            all_labels,
+            all_preds,
+            target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
+        # target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5", "Neutral 6"])
+
+        metrics = {
+            "balanced_accuracy": balanced_accuracy,
+            "accuracy": accuracy,
+            "f1_weighted": f1_weighted,
+            "recall": recall,
+            "precision": precision
+        }
+
+        wandb_input = metrics
+        # wandb_input = metrics | f1_per_class_dict
+        wandb.log(wandb_input)
+
+        if balanced_accuracy > best_val_balanced_accuracy:
+            best_val_balanced_accuracy = balanced_accuracy
+            best_epoch = epoch
+
+            best_model_info_dict = {
+                'state_dict': model.model.state_dict(),
+                'epoch': best_epoch,
+                'val_balanced_accuracy': best_val_balanced_accuracy,
+            }
+
+    torch.save(best_model_info_dict, run_dir / 'best_model_info_dict.pth')
+    wandb.finish()
+
+
+def main_test():
+    # Create test set. Random split is always fixed.
+    path_to_pickle = DATASETS_DIR / "sdm_2023-01_all_valid_files_version_1.pkl"
+    dataset = EkmanDataset(path_to_pickle)
+    dataset.load_data_and_labels_without_neutral()
+    dataset.normalize_samples(normalization="per-sample")
+    dataset.split_dataset_into_train_val_test(stratify=True)
+    _, _, test_dataloader = dataset.create_data_loader(upsampling="none")
+
+    # Load the trained model.
+    epochs = 1
+    name_core = f"fc-6_normalized_81k-epochs-{epochs}"
+    model_dir = MODELS_DIR / name_core
+    run_id = 1
+    run_dir = model_dir / f"run-{run_id}"
+
+    best_model_info = torch.load(run_dir / 'best_model_info_dict.pth')
+    model = DenseClassifier("params")
+    model.setup_model()
+    model.model.eval()
+    model.model.load_state_dict(best_model_info['state_dict'])
+    print("Best epoch: ", best_model_info["epoch"])
+    print("Best BA: ", best_model_info["val_balanced_accuracy"])
+
+    all_preds_test = []
+    all_labels_test = []
+
+    with torch.no_grad():
+        for batch_data, batch_labels in test_dataloader:
+            output = model(batch_data)
+            predicted_test = output.argmax(dim=1)
+            all_preds_test.extend(predicted_test.numpy())
+            all_labels_test.extend(batch_labels.numpy())
+
+    test_balanced_accuracy = balanced_accuracy_score(all_labels_test, all_preds_test)
+    print(f'Test Balanced Accuracy: {test_balanced_accuracy}')
+
+    test_accuracy = accuracy_score(all_labels_test, all_preds_test)
+    f1_class = f1_score(all_labels_test, all_preds_test, average=None, zero_division=0.0)
+    test_f1_weighted = f1_score(all_labels_test, all_preds_test, average="weighted", zero_division=0.0)
+    test_recall = recall_score(all_labels_test, all_preds_test, average="weighted", zero_division=0.0)
+    test_precision = precision_score(all_labels_test, all_preds_test, average="weighted", zero_division=0.0)
+    test_report = classification_report(
+        all_labels_test,
+        all_preds_test,
+        target_names=["Angry 0", "Disgust 1", "Happy 2", "Sad 3", "Surprise 4", "Fear 5"])
+
+    print(f'Test Accuracy: {test_accuracy}')
+    print(f'Test F1 weighted: {test_f1_weighted}')
+    print(f'Test Recall: {test_recall}')
+    print(f'Test Precision: {test_precision}')
+    print(f'Test Report: {test_report}')
+
+
+
+
 if __name__ == "__main__":
-    _main(False)
+    #_main(False)
     #main_hp_optimization()  # raw TS
-    main_hp_optimization_spectral()  # MFCCs + DWT (level 1 & 3) + CWT
+    #main_hp_optimization_spectral()  # MFCCs + DWT (level 1 & 3) + CWT
+    main_train_val()
+    #main_test()
 
 
 
