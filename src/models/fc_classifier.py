@@ -48,10 +48,11 @@ class DenseClassifier(DLClassifier):
         self.model = torch.nn.Sequential(
             torch.nn.Linear(input_dim, self.n_hidden_1),
             torch.nn.ReLU(),
+            # torch.nn.Dropout(self.dropout_rate),
             torch.nn.Linear(self.n_hidden_1, self.n_hidden_2),
             torch.nn.ReLU(),
+            #torch.nn.Dropout(self.dropout_rate),
             torch.nn.Linear(self.n_hidden_2, output_dim),
-            # torch.nn.Softmax(dim=1) -> not needed because torch.nn.CrossEntropyLoss inherently applies softmax
         )
 
     def forward(self, x):
@@ -66,7 +67,7 @@ def objective(trial, save=False):
     #dataset.load_dataset()
     dataset.load_data_and_labels_without_neutral()
     dataset.normalize_samples(normalization="per-sample")
-    #dataset.load_dataset()
+
     dataset.split_dataset_into_train_val_test(stratify=True)
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="none")
@@ -85,6 +86,7 @@ def objective(trial, save=False):
     dropout_rate = trial.suggest_categorical('dropout_rate', [0, 0.1, 0.2])
 
     model.learning_rate = lr
+    print("model.learning_rate", model.learning_rate)
     model.n_hidden_1 = hidden_dim_1
     model.n_hidden_2 = hidden_dim_2
     model.dropout_rate = dropout_rate
@@ -109,7 +111,7 @@ def objective(trial, save=False):
     }
 
     wandb.init(
-        project="baseline_" + name_core + "-hpo",
+        project="debug_" + name_core + "-hpo",
         dir=LOGS_DIR,
         name=name_experiment,
         notes=experiment_notes,
@@ -117,16 +119,20 @@ def objective(trial, save=False):
     )
 
     # Number of epochs
-    epochs = 35  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+    epochs = 3  # instead of 40; values are rather constant after 15 epochs. Probably due to imbalance in data
+
+    print(f"Epoch {epochs + 1} - Hidden Dimensions: {model.n_hidden_1}, {model.n_hidden_2}")
 
     # Training loop
     for epoch in range(epochs):
         model.model.train()
+
+        hidden_dimensions = [layer.out_features for layer in model.model if isinstance(layer, torch.nn.Linear)]
+        print(f"Epoch {epoch + 1}: Hidden Dimensions - {hidden_dimensions}")
         for batch_data, batch_labels in train_dataloader:
-            print("Batch_data[0]: ", batch_data[0])
+            #print("Batch_data[0]: ", batch_data[0])
             # Zero gradients
             model.optimizer.zero_grad()
-
             # Forward pass
             outputs = model(batch_data)  # Without implemented __call__ method: model.forward(data)
 
@@ -679,9 +685,14 @@ def main_test():
 
 if __name__ == "__main__":
     #_main(False)
-    #main_hp_optimization()  # raw TS
+    main_hp_optimization()  # raw TS
     #main_hp_optimization_spectral()  # MFCCs + DWT (level 1 & 3) + CWT
+
+    """
+    Latest code for also reproducing my results: 
     main_train_val()
+    """
+
     #main_test()
 
 
