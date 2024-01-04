@@ -10,6 +10,7 @@ data/datasets
 data/corrected-raw-plant-data
 
 notebooks/playground.ipynb
+notebooks/
 
 results/models
 results/figures
