@@ -15,6 +15,10 @@ class DLClassifier(PlantClassifier):
         self.criterion = None
         self.optimizer = None
         self.model = None
+        #self.learning_rate = 0.0001
+        #self.n_hidden_1 = 128
+        #self.n_hidden_2 = 64
+        #self.dropout_rate = 0
         self.learning_rate = 0.0001
         self.n_hidden_1 = 128
         self.n_hidden_2 = 64
@@ -47,6 +51,7 @@ class DLClassifier(PlantClassifier):
         """
         # Loss function & optimizer
         self.criterion = torch.nn.CrossEntropyLoss()
+        print("self.learning_rate", self.learning_rate)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
     def parameters(self):
