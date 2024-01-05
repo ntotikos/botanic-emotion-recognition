@@ -216,9 +216,9 @@ def objective_spectral(trial, save=False):
     #dataset.load_dataset()
     dataset.load_data_and_labels_without_neutral()
 
-    #dataset.normalize_samples(normalization="per-sample")
-    #dataset.extract_features(flatten=True) # For MFCC
-    dataset.extract_features(flatten=False)
+    dataset.normalize_samples(normalization="per-sample")  # For MFCC
+    dataset.extract_features(flatten=True) # For MFCC
+    #dataset.extract_features(flatten=False)
     dataset.split_dataset_into_train_val_test(stratify=True)
 
     train_dataloader, val_dataloader, test_dataloader = dataset.create_data_loader(upsampling="none")
@@ -685,8 +685,8 @@ def main_test():
 
 if __name__ == "__main__":
     #_main(False)
-    main_hp_optimization()  # raw TS
-    #main_hp_optimization_spectral()  # MFCCs + DWT (level 1 & 3) + CWT
+    #main_hp_optimization()  # raw TS
+    main_hp_optimization_spectral()  # MFCCs + DWT (level 1 & 3) + CWT
 
     """
     Latest code for also reproducing my results: 
