@@ -92,7 +92,7 @@ def objective(trial, save=False):
     model.conv_ker_size = conv_kernel_size
     model.dropout_rate = dropout_rate
 
-    # remove mode.setup_training() and run:
+    # remove model.setup_training() and run:
     #criterion = torch.nn.CrossEntropyLoss()
     #optimizer = torch.optim.Adam(model.parameters(), lr=model.learning_rate)
 
@@ -184,32 +184,3 @@ def objective(trial, save=False):
     wandb.finish()
 
     return balanced_accuracy
-
-
-def main_hp_optimization_mfcc():
-    search_space = {
-        'lr': [0.0001, 0.001, 0.01],
-        'conv_filters_1': [2 ** i for i in range(6, 8)],
-        'conv_filters_2': [2 ** i for i in range(5, 7)],
-        'conv_kernel_size': [3, 5, 7],
-        "dropout_rate": [0, 0.1, 0.2]
-    }
-
-    name_core = "cnn_mfcc_6_rgb_81k"
-
-    sampler = optuna.samplers.GridSampler(search_space)  # Grid Search
-    study = optuna.create_study(sampler=sampler, study_name=name_core, storage="sqlite:///hpo_" + name_core + ".db",
-                                direction="maximize", load_if_exists=True)
-    study.optimize(objective, n_trials=108)
-
-    print("Study statistics: ")
-    print("  Number of finished trials: ", len(study.trials))
-
-    print("Best trial:")
-    trial_ = study.best_trial
-
-    print("  Value: ", trial_.value)
-
-    print("  Params: ")
-    for key, value in trial_.params.items():
-        print("    {}: {}".format(key, value))
