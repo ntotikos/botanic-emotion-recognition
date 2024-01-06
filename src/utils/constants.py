@@ -46,3 +46,7 @@ INT_TO_EKMAN_NEUTRAL_DICT = {i: EKMAN_EMOTIONS_NEUTRAL[i] for i in range(len(EKM
 
 # Signal
 SAMPLING_RATE = 10000  # Samples per second
+
+
+def map_int_to_label(emotion: int):
+    return INT_TO_EKMAN_NEUTRAL_DICT[int(emotion)]
