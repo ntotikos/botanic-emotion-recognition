@@ -13,6 +13,8 @@ INTERIM_PLANT_DATA_DIR = PROJECT_ROOT / "data/interim-plant-data-teamwork-extrac
 CLEANED_DATA_DIR = PROJECT_ROOT / "data/cleaned-plant-data"
 DATASETS_DIR = PROJECT_ROOT / "data/datasets"  # TODO: update once target datasets are defined.
 MFCC_IMAGES_DIR = PROJECT_ROOT / "data/mfcc-images"
+SPECTROGRAM_IMAGES_DIR = PROJECT_ROOT / "data/spectrogram-images"
+RECURRENCEPLOT_IMAGE_DIR = PROJECT_ROOT / "data/recurrenceplot-images"
 
 LOGS_DIR = PROJECT_ROOT / "logs"
 
