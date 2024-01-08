@@ -685,7 +685,7 @@ def main_test():
 
 if __name__ == "__main__":
     #_main(False)
-    #main_hp_optimization()  # raw TS
+    main_hp_optimization()  # raw TS
     #main_hp_optimization_spectral()  # MFCCs + DWT (level 1 & 3) + CWT
 
 
