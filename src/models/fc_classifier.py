@@ -558,6 +558,9 @@ def main_train_val():
     best_epoch = 0
     best_model_info_dict = {}
 
+    # Collect BAs
+    balanced_accuracies = []
+
     # Training loop
     for epoch in range(epochs):
         model.model.train()
@@ -622,6 +625,8 @@ def main_train_val():
                 'epoch': best_epoch,
                 'val_balanced_accuracy': best_val_balanced_accuracy,
             }
+
+        balanced_accuracies.append(balanced_accuracy)
 
     torch.save(best_model_info_dict, run_dir / 'best_model_info_dict.pth')
     wandb.finish()
